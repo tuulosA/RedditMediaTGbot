@@ -1,0 +1,5 @@
+.env
+fetched_posts_log.txt
+dead_links.json
+__pycache__/
+.vs/

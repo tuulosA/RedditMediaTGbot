@@ -1,0 +1,5 @@
+asyncpraw
+python-telegram-bot
+aiohttp
+python-dotenv
+opencv-python
