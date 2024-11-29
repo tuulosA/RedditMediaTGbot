@@ -14,4 +14,3 @@ def create_temp_dir(prefix: str) -> str:
     except Exception as e:
         logger.error(f"Error creating temporary directory with prefix '{prefix}': {e}", exc_info=True)
         raise
-

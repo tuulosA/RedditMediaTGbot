@@ -5,6 +5,7 @@ from reddit.config import Paths
 
 logger = logging.getLogger(__name__)
 
+
 def load_blacklist():
     """Load the blacklist of dead links from a JSON file."""
     if not os.path.exists(Paths.BLACKLIST_FILE):
@@ -21,6 +22,7 @@ def load_blacklist():
         logger.error(f"Error loading blacklist file {Paths.BLACKLIST_FILE}: {e}")
         return set()
 
+
 def save_blacklist(blacklist):
     """Save the blacklist of dead links to a JSON file."""
     try:
@@ -29,6 +31,7 @@ def save_blacklist(blacklist):
         logger.info(f"Successfully saved {len(blacklist)} entries to blacklist.")
     except Exception as e:
         logger.error(f"Error saving blacklist to file {Paths.BLACKLIST_FILE}: {e}")
+
 
 def add_to_blacklist(link):
     """Add a link to the blacklist and save it."""
@@ -39,6 +42,7 @@ def add_to_blacklist(link):
     blacklist.add(link)
     logger.info(f"Added link to blacklist: {link}")
     save_blacklist(blacklist)
+
 
 def is_blacklisted(link: str) -> bool:
     """

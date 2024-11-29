@@ -6,6 +6,7 @@ from reddit.config import Paths
 
 logger = logging.getLogger(__name__)
 
+
 async def initialize_client(client_initializer):
     """
     Initialize a Reddit client with error handling.
@@ -20,12 +21,14 @@ async def initialize_client(client_initializer):
         logger.error(f"Error initializing Reddit client: {e}", exc_info=True)
         raise RuntimeError("An unexpected error occurred while initializing the Reddit client.")
 
+
 async def notify_user(update, message):
     """
     Send a notification message to the user via Telegram.
     """
     logger.info(f"Notifying user: {message}")
     await update.message.reply_text(message)
+
 
 def log_summary(posts: List[Submission]):
     """
@@ -35,6 +38,7 @@ def log_summary(posts: List[Submission]):
     logger.info("Pipeline Summary of Successfully Sent Posts:")
     for post in posts:
         logger.info(f"Title: {post.title}, URL: {post.url}")
+
 
 def clear_fetched_posts_log():
     """
@@ -46,6 +50,7 @@ def clear_fetched_posts_log():
         logger.info("Cleared the fetched posts log file.")
     except Exception as e:
         logger.error(f"Failed to clear fetched posts log file: {e}", exc_info=True)
+
 
 async def validate_subreddits(reddit_instance, subreddit_names):
     """

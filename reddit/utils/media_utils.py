@@ -223,5 +223,3 @@ async def fetch_top_comment(media_data: Submission) -> Optional[str]:
     except Exception as e:
         logger.warning(f"Failed to fetch top comment for post ID {media_data.id}: {e}")
     return None
-
-

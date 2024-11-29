@@ -14,6 +14,7 @@ from reddit.config import TimeoutConfig, MediaConfig, RetryConfig
 
 logger = logging.getLogger(__name__)
 
+
 async def fetch_and_filter_media(
     subreddit_names,
     search_terms,
@@ -56,6 +57,7 @@ async def fetch_and_filter_media(
     except Exception as e:
         logger.error(f"Error fetching media posts: {e}", exc_info=True)
         raise RuntimeError("An error occurred while fetching media posts. Please try again.")
+
 
 async def pipeline(
     update,

@@ -3,6 +3,7 @@ from reddit.config import RedditConfig
 # Global Reddit client instance
 REDDIT_CLIENT = None
 
+
 async def get_reddit_client():
     """
     Returns a shared instance of the Reddit client, initializing it if necessary.
