@@ -134,15 +134,6 @@ def is_file_size_valid(file_path: str, max_size_mb: int, compress: bool = True) 
 def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, max_attempts: int = 3) -> bool:
     """
     Compresses a video to ensure it is below the specified size limit.
-
-    Args:
-        input_path (str): Path to the input video file.
-        output_path (str): Path to save the compressed video.
-        target_size_mb (int): Target size in MB for the compressed video.
-        max_attempts (int): Maximum number of compression attempts.
-
-    Returns:
-        bool: True if compression is successful and the output file meets the size requirement, False otherwise.
     """
     crf = 36  # Starting compression factor
     max_bitrate = 2000  # Starting bitrate (in kbps)
@@ -187,13 +178,6 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
 async def resolve_reddit_gallery(post_id: str, reddit_instance: Reddit) -> Optional[str]:
     """
     Resolves a random media URL from a Reddit gallery post.
-
-    Args:
-        post_id (str): ID of the Reddit gallery post.
-        reddit_instance (Reddit): Reddit API client instance.
-
-    Returns:
-        Optional[str]: Resolved media URL, or None if no valid media is found.
     """
     try:
         submission = await reddit_instance.submission(id=post_id)
