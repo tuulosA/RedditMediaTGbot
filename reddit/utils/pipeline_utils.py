@@ -50,13 +50,6 @@ def clear_fetched_posts_log():
 async def validate_subreddits(reddit_instance, subreddit_names):
     """
     Validates if the given subreddits exist and are accessible.
-
-    Args:
-        reddit_instance: Reddit API client instance.
-        subreddit_names (list[str]): List of subreddit names to validate.
-
-    Returns:
-        list[str]: List of valid subreddit names.
     """
     valid_subreddits = []
     for subreddit_name in subreddit_names:

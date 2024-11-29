@@ -108,10 +108,6 @@ def validate_submission_objects(posts: List[Submission], context: str = "") -> N
     """
     Validates that all items in the provided list are Submission objects.
     Logs warnings for any unexpected types.
-
-    Args:
-        posts (List[Submission]): The list of posts to validate.
-        context (str): Contextual information for logging (e.g., "fetched posts").
     """
     for post in posts:
         if not isinstance(post, Submission):

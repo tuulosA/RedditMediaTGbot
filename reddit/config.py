@@ -10,8 +10,6 @@ class RedditConfig:
     def load_reddit_config():
         """
         Loads Reddit API credentials from environment variables.
-        Returns:
-            dict: A dictionary containing Reddit API credentials.
         """
         required_keys = ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT", "REDDIT_USERNAME", "REDDIT_PASSWORD"]
         config = {key: os.getenv(key) for key in required_keys}
