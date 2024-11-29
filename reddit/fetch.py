@@ -4,14 +4,15 @@ import logging
 from typing import Optional, List, Set
 from reddit.filter_posts import filter_media_posts
 from reddit.utils.fetch_utils import (
-    fetch_posts,
     fetch_and_validate_subreddit,
     filter_duplicates,
     log_filtered_posts,
     validate_submission_objects,
+    _fetch_search_results,
+    get_sorted_subreddit_posts
 )
 from reddit.config import MediaConfig
-from asyncpraw.models import Submission
+from asyncpraw.models import Subreddit, Submission
 
 logger = logging.getLogger(__name__)
 
@@ -130,3 +131,26 @@ async def fetch_from_subreddit(
         except Exception as e:
             logger.error(f"Error fetching posts from r/{subreddit_name}: {e}", exc_info=True)
             return []
+
+
+async def fetch_posts(
+    subreddit: Subreddit, search_terms: List[str], sort: str, time_filter: Optional[str]
+) -> List[Submission]:
+    """
+    Fetch posts from a subreddit using search terms or sorted criteria.
+    Exclusively returns Submission objects.
+    """
+    try:
+        if search_terms:
+            search_query = " ".join(search_terms)
+            logger.info(f"Searching r/{subreddit.display_name} with terms: {search_query}")
+            posts = await _fetch_search_results(subreddit, search_query, sort, time_filter)
+        else:
+            logger.info(f"No search terms provided. Fetching sorted posts from r/{subreddit.display_name}.")
+            posts = await get_sorted_subreddit_posts(subreddit, sort, time_filter)
+
+        validate_submission_objects(posts, context="fetched posts")
+        return posts
+    except Exception as e:
+        logger.error(f"Error fetching posts from r/{subreddit.display_name}: {e}", exc_info=True)
+        return []

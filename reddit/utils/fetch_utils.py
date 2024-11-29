@@ -95,27 +95,13 @@ async def get_sorted_subreddit_posts(
         return []
 
 
-async def fetch_posts(
-    subreddit: Subreddit, search_terms: List[str], sort: str, time_filter: Optional[str]
-) -> List[Submission]:
+async def _fetch_subreddit_posts(subreddit: Subreddit, sort: str, time_filter: Optional[str]) -> List[Submission]:
     """
-    Fetch posts from a subreddit using search terms or sorted criteria.
-    Exclusively returns Submission objects.
+    Helper function to fetch posts from a subreddit using sorting criteria.
     """
-    try:
-        if search_terms:
-            search_query = " ".join(search_terms)
-            logger.info(f"Searching r/{subreddit.display_name} with terms: {search_query}")
-            posts = await _fetch_search_results(subreddit, search_query, sort, time_filter)
-        else:
-            logger.info(f"No search terms provided. Fetching sorted posts from r/{subreddit.display_name}.")
-            posts = await get_sorted_subreddit_posts(subreddit, sort, time_filter)
-
-        validate_submission_objects(posts, context="fetched posts")
-        return posts
-    except Exception as e:
-        logger.error(f"Error fetching posts from r/{subreddit.display_name}: {e}", exc_info=True)
-        return []
+    if sort == "top" and time_filter:
+        return [post async for post in subreddit.top(time_filter=time_filter, limit=MediaConfig.POST_LIMIT)]
+    return [post async for post in subreddit.hot(limit=MediaConfig.POST_LIMIT)]
 
 
 def validate_submission_objects(posts: List[Submission], context: str = "") -> None:
@@ -130,15 +116,6 @@ def validate_submission_objects(posts: List[Submission], context: str = "") -> N
     for post in posts:
         if not isinstance(post, Submission):
             logger.warning(f"Unexpected type in {context}: {type(post)}")
-
-
-async def _fetch_subreddit_posts(subreddit: Subreddit, sort: str, time_filter: Optional[str]) -> List[Submission]:
-    """
-    Helper function to fetch posts from a subreddit using sorting criteria.
-    """
-    if sort == "top" and time_filter:
-        return [post async for post in subreddit.top(time_filter=time_filter, limit=MediaConfig.POST_LIMIT)]
-    return [post async for post in subreddit.hot(limit=MediaConfig.POST_LIMIT)]
 
 
 async def _fetch_search_results(
