@@ -32,7 +32,6 @@ async def parse_command_args(update: Update, context: CallbackContext) -> tuple:
     return time_filter, subreddit_names, search_terms, media_count, media_type, include_comments
 
 
-
 def parse_subreddits(arg: str) -> List[str]:
     """
     Parse and validate subreddit names.
