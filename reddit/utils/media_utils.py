@@ -97,12 +97,10 @@ def cleanup_file(file_path: str) -> None:
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
-            logger.info(f"File cleaned up: {file_path}")
 
         parent_dir = os.path.dirname(file_path)
         if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
             os.rmdir(parent_dir)
-            logger.info(f"Empty directory cleaned up: {parent_dir}")
     except Exception as e:
         logger.error(f"Failed to clean up file or directory: {file_path}. Exception: {e}", exc_info=True)
 

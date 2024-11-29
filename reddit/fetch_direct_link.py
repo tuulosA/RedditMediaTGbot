@@ -167,7 +167,6 @@ async def yt_dlp_download(media_url: str) -> Tuple[Optional[str], Optional[str]]
         for file_name in os.listdir(temp_dir):
             if file_name.endswith(('.mp4', '.m4a')):
                 file_path = os.path.join(temp_dir, file_name)
-                logger.info(f"Media downloaded to: {file_path}")
                 return file_path, temp_dir
 
         logger.error("yt-dlp completed but no valid file found.")
