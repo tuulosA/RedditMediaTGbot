@@ -178,7 +178,7 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
 
         # Adjust parameters for the next attempt
         crf += 2
-        max_bitrate -= 500  # Reduce bitrate further
+        max_bitrate -= 500
 
     logger.error(f"Failed to compress {input_path} below {target_size_mb} MB after {max_attempts} attempts.")
     return False
@@ -196,7 +196,6 @@ async def resolve_reddit_gallery(post_id: str, reddit_instance: Reddit) -> Optio
         Optional[str]: Resolved media URL, or None if no valid media is found.
     """
     try:
-        # Fetch the submission object
         submission = await reddit_instance.submission(id=post_id)
 
         if not hasattr(submission, "media_metadata"):

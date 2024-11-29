@@ -50,7 +50,7 @@ def parse_other_args(args: List[str]) -> tuple:
     media_count = 1
     media_type = None
     search_terms = []
-    include_comments = False  # Default is False
+    include_comments = False
 
     for arg in args:
         # Check for the `-c` flag

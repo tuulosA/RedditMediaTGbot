@@ -127,7 +127,6 @@ async def pipeline(
             successfully_sent_posts.extend(processed)
             total_processed += len(processed)
 
-        # Notify if fewer posts processed
         if total_processed < media_count:
             await notify_user(update, f"Only {total_processed}/{media_count} unique media posts found.")
 

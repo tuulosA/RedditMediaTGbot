@@ -17,7 +17,6 @@ async def reddit_media_command(update: Update, context: CallbackContext) -> None
         return
 
     try:
-        # Updated to include `include_comments`
         time_filter, subreddit_names, search_terms, media_count, media_type, include_comments = await parse_command_args(update, context)
 
         if not subreddit_names:
@@ -40,7 +39,7 @@ async def reddit_media_command(update: Update, context: CallbackContext) -> None
             time_filter=time_filter,
             media_count=media_count,
             media_type=media_type,
-            include_comments=include_comments,  # Pass the include_comments flag
+            include_comments=include_comments
         )
 
     except ValueError as e:

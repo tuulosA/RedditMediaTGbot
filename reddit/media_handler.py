@@ -63,23 +63,19 @@ async def process_media(
         return None
 
     try:
-        # Fetch the top human comment if include_comments is True
         top_comment = await fetch_top_comment(media_data) if include_comments else None
 
-        # Resolve the media URL
         resolved_url = await resolve_media_url(media_url, reddit_instance, session)
         if not resolved_url:
             logger.warning(f"Failed to resolve media URL: {media_url}")
             return None
 
-        # Download and validate the media
         file_path = await validate_media_download(resolved_url, session)
         if not file_path:
             return None
 
-        # Send the media to Telegram
         if await send_to_telegram(file_path, update, caption=top_comment):
-            return media_data  # Return the original Submission object on success
+            return media_data
     except Exception as e:
         logger.error(f"Error processing media {media_url}: {e}", exc_info=True)
     finally:
@@ -148,8 +144,6 @@ async def download_media(resolved_url: str, session: aiohttp.ClientSession) -> O
         file_name = resolved_url.split("/")[-1]
         file_path = os.path.join(temp_dir, file_name)
 
-        # Download with timeout
-        # Download with timeout
         try:
             timeout = aiohttp.ClientTimeout(total=TimeoutConfig.DOWNLOAD_TIMEOUT)
             async with session.get(resolved_url, timeout=timeout) as response:
@@ -164,7 +158,6 @@ async def download_media(resolved_url: str, session: aiohttp.ClientSession) -> O
             logger.error(f"Download timed out for URL: {resolved_url}")
             return None
 
-        # Validate and process the downloaded file
         if validate_file(file_path):
             if file_path.endswith(".gif"):
                 return await convert_gif_to_mp4(file_path)
@@ -191,7 +184,6 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
     if file_path.endswith(("mp4", "webm")):
         return await send_video(file_path, bot, update, caption)
 
-    # Retry logic for non-video media
     for attempt in range(1, RetryConfig.RETRY_ATTEMPTS + 1):
         try:
             await media_type(file_path, update, caption=caption)
@@ -215,7 +207,7 @@ async def send_video(file_path: str, bot, update: Update, caption: Optional[str]
     Handles sending video files to Telegram with resolution metadata and optional caption.
     Retries on timeout errors.
     """
-    cap = None  # Initialize cap to avoid referencing before assignment
+    cap = None
 
     for attempt in range(1, RetryConfig.RETRY_ATTEMPTS + 1):
         try:
@@ -226,7 +218,6 @@ async def send_video(file_path: str, bot, update: Update, caption: Optional[str]
                 return False
 
             with open(file_path, "rb") as video_file:
-                # Send the video without the `timeout` argument
                 await bot.send_video(
                     chat_id=update.effective_chat.id,
                     video=video_file,
@@ -248,6 +239,6 @@ async def send_video(file_path: str, bot, update: Update, caption: Optional[str]
             logger.error(f"Error sending video {file_path}: {e}", exc_info=True)
             return False
         finally:
-            if cap:  # Ensure cap is released only if it was successfully initialized
+            if cap:
                 cap.release()
     return False

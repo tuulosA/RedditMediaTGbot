@@ -34,20 +34,17 @@ async def filter_media_posts(
 
     for post in posts:
         try:
-            # Check if the post should be skipped
             skip_reason = should_skip_post(post, processed_urls, media_type)
             if skip_reason:
                 skip_reasons[skip_reason] += 1
                 logger.debug(f"Post skipped ({skip_reason}): {post.url}")
                 continue
 
-            # Attach metadata to the Submission object
             attach_post_metadata(post)
             filtered_posts.append(post)
         except Exception as e:
             logger.error(f"Error processing post {post.id}: {e}", exc_info=True)
 
-    # Log skipped reasons
     log_skipped_reasons(skip_reasons)
 
     if not filtered_posts:

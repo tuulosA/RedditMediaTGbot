@@ -38,13 +38,6 @@ async def fetch_and_validate_subreddit(subreddit_name: str, update) -> Optional[
 def filter_duplicates(posts: List[Submission], processed_post_ids: Set[str]) -> List[Submission]:
     """
     Filter out duplicate posts based on their IDs.
-
-    Args:
-        posts (List[Submission]): List of Reddit Submission objects.
-        processed_post_ids (Set[str]): Set of already processed post IDs.
-
-    Returns:
-        List[Submission]: List of unique Submission objects.
     """
     unique_posts = [post for post in posts if post.id not in processed_post_ids]
     logger.debug(f"Filtered {len(posts) - len(unique_posts)} duplicate posts.")

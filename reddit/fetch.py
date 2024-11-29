@@ -67,7 +67,7 @@ async def fetch_posts_to_list(
     for task in asyncio.as_completed(fetch_tasks):
         try:
             media_posts = await task
-            validate_submission_objects(media_posts, context="media_posts")  # Consolidated validation
+            validate_submission_objects(media_posts, context="media_posts")
 
             if media_posts:
                 # Extend results up to the remaining required count

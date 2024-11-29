@@ -62,7 +62,7 @@ async def validate_subreddits(reddit_instance, subreddit_names):
     for subreddit_name in subreddit_names:
         try:
             subreddit = await reddit_instance.subreddit(subreddit_name)
-            await subreddit.load()  # Correctly await the coroutine
+            await subreddit.load()
             valid_subreddits.append(subreddit_name)
         except Exception as e:
             logger.warning(f"Subreddit {subreddit_name} is invalid or inaccessible: {e}")
