@@ -2,8 +2,8 @@ import asyncio
 import random
 import logging
 from typing import Optional, List, Set
-from reddit.filter_posts import filter_media_posts
-from reddit.utils.fetch_utils import (
+from bot.filter_posts import filter_media_posts
+from bot.utils.fetch_utils import (
     fetch_and_validate_subreddit,
     filter_duplicates,
     log_filtered_posts,
@@ -11,7 +11,7 @@ from reddit.utils.fetch_utils import (
     _fetch_search_results,
     get_sorted_subreddit_posts
 )
-from reddit.config import MediaConfig
+from bot.config import MediaConfig
 from asyncpraw.models import Subreddit, Submission
 
 logger = logging.getLogger(__name__)

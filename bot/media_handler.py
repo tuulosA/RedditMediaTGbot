@@ -7,7 +7,7 @@ from typing import Optional, List
 import aiohttp
 from asyncpraw import Reddit
 import cv2
-from reddit.utils.media_utils import (
+from bot.utils.media_utils import (
     convert_gif_to_mp4,
     validate_file,
     is_file_size_valid,
@@ -16,9 +16,9 @@ from reddit.utils.media_utils import (
     fetch_top_comment,
     cleanup_file
 )
-from reddit.fetch_direct_link import fetch_direct_link
-from reddit.config import MediaConfig, RetryConfig, TimeoutConfig
-from reddit.utils.tempfile_utils import create_temp_dir
+from bot.fetch_direct_link import fetch_direct_link
+from bot.config import MediaConfig, RetryConfig, TimeoutConfig
+from bot.utils.tempfile_utils import create_temp_dir
 from asyncpraw.models import Submission
 
 logger = logging.getLogger(__name__)
@@ -116,7 +116,7 @@ async def resolve_media_url(media_url: str, reddit_instance: Reddit, session: ai
         if media_url.startswith("/tmp") and validate_file(media_url):
             return media_url
 
-        if "reddit.com/gallery/" in media_url:
+        if "bot.com/gallery/" in media_url:
             return await resolve_reddit_gallery(media_url.split("/")[-1], reddit_instance)
 
         return await fetch_direct_link(media_url, session)

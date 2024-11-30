@@ -1,11 +1,11 @@
 import os
 import aiohttp
 import logging
-from reddit.utils.tempfile_utils import create_temp_dir
+from bot.utils.tempfile_utils import create_temp_dir
 import asyncio
 from typing import Optional, Tuple
 import subprocess
-from reddit.utils.blacklist_manager import add_to_blacklist, is_blacklisted
+from bot.utils.blacklist_manager import add_to_blacklist, is_blacklisted
 
 logger = logging.getLogger(__name__)
 

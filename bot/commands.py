@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import CallbackContext
 import logging
-from reddit.pipeline import pipeline
-from reddit.utils.command_utils import parse_command_args
-from reddit.config import Messages
+from bot.pipeline import pipeline
+from bot.utils.command_utils import parse_command_args
+from bot.config import Messages
 
 logger = logging.getLogger(__name__)
 

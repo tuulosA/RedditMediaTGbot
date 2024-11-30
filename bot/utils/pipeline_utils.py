@@ -2,7 +2,7 @@ import logging
 import asyncio
 from typing import List
 from asyncpraw.models import Submission
-from reddit.config import Paths
+from bot.config import Paths
 
 logger = logging.getLogger(__name__)
 

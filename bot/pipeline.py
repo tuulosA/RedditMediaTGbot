@@ -1,16 +1,16 @@
 import asyncio
 import logging
-from reddit import get_reddit_client
-from reddit.fetch import fetch_posts_to_list
-from reddit.media_handler import process_media_batch
-from reddit.utils.pipeline_utils import (
+from bot import get_reddit_client
+from bot.fetch import fetch_posts_to_list
+from bot.media_handler import process_media_batch
+from bot.utils.pipeline_utils import (
     initialize_client,
     notify_user,
     log_summary,
     validate_subreddits,
     clear_fetched_posts_log,
 )
-from reddit.config import TimeoutConfig, MediaConfig, RetryConfig
+from bot.config import TimeoutConfig, MediaConfig, RetryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ async def pipeline(
             await notify_user(update, f"Only {total_processed}/{media_count} unique media posts found.")
 
         # Log all posts and summary
-        from reddit.utils.fetch_utils import log_all_posts_to_file
+        from bot.utils.fetch_utils import log_all_posts_to_file
         for subreddit in subreddit_names:
             await log_all_posts_to_file(subreddit, successfully_sent_posts)
         log_summary(successfully_sent_posts)

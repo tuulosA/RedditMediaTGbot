@@ -1,7 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import CallbackContext
-from reddit.config import Messages, MediaConfig
+from bot.config import Messages, MediaConfig
 from typing import List
 
 logger = logging.getLogger(__name__)

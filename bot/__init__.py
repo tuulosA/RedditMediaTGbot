@@ -1,4 +1,4 @@
-from reddit.config import RedditConfig
+from bot.config import RedditConfig
 
 # Global Reddit client instance
 REDDIT_CLIENT = None

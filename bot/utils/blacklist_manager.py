@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from reddit.config import Paths
+from bot.config import Paths
 
 logger = logging.getLogger(__name__)
 

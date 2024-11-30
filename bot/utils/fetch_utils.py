@@ -2,8 +2,8 @@ import logging
 from typing import List, Optional, Set
 import asyncprawcore
 from asyncpraw.models import Subreddit, Submission
-from reddit import get_reddit_client
-from reddit.config import Paths, MediaConfig
+from bot import get_reddit_client
+from bot.config import Paths, MediaConfig
 
 logger = logging.getLogger(__name__)
 

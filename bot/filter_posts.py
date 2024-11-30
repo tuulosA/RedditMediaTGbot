@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, Set
 from random import sample
-from reddit.utils.filter_utils import (
+from bot.utils.filter_utils import (
     should_skip_post,
     attach_post_metadata,
     log_skipped_reasons

@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Set
-from reddit.utils.blacklist_manager import is_blacklisted
+from bot.utils.blacklist_manager import is_blacklisted
 from asyncpraw.models import Submission
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def is_valid_media_url(url: str) -> bool:
     Validate if the given URL points to a supported media type or matches a known pattern.
     """
     valid_extensions = (".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webm", ".gifv")
-    supported_patterns = ["reddit.com/gallery/", "v.redd.it", "i.redd.it", "imgur.com"]
+    supported_patterns = ["bot.com/gallery/", "v.redd.it", "i.redd.it", "imgur.com"]
 
     if url.lower().endswith(valid_extensions) or any(pattern in url for pattern in supported_patterns):
         return True
@@ -47,7 +47,7 @@ def filter_posts_by_type(url: str, media_type: Optional[str]) -> bool:
 
     url_lower = url.lower()
 
-    if "reddit.com/gallery/" in url_lower and media_type == "image":
+    if "bot.com/gallery/" in url_lower and media_type == "image":
         return True
     if media_type == "image" and url_lower.endswith(("jpg", "jpeg", "png")):
         return True
