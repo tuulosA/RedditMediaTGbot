@@ -10,17 +10,18 @@ from asyncpraw.models import Submission
 from bot.utils.media_utils import (
     convert_gif_to_mp4,
     validate_file,
-    is_file_size_valid,
     resolve_reddit_gallery,
     determine_media_type,
     fetch_top_comment,
     cleanup_file
 )
+from bot.utils.compressor import is_file_size_valid
 from bot.fetch_direct_link import fetch_direct_link
 from bot.config import MediaConfig, RetryConfig, TimeoutConfig
 from bot.utils.tempfile_utils import create_temp_dir
 
 logger = logging.getLogger(__name__)
+
 
 async def process_media_batch(
     media_list: list[Submission],

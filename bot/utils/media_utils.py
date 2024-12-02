@@ -10,22 +10,6 @@ from urllib.parse import urlparse
 logger = logging.getLogger(__name__)
 
 
-def is_file_size_valid(file_path: str, max_size_mb: int) -> bool:
-    """
-    Checks if a file's size is within the specified maximum size in MB.
-    """
-    if not validate_file(file_path):
-        return False
-
-    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-    if file_size_mb <= max_size_mb:
-        logger.debug(f"File size is valid: {file_size_mb:.2f} MB <= {max_size_mb} MB")
-        return True
-
-    logger.warning(f"File size exceeds limit: {file_size_mb:.2f} MB > {max_size_mb} MB")
-    return False
-
-
 async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
     """
     Converts a GIF file to MP4 using FFmpeg.
