@@ -9,37 +9,6 @@ from bot.config import TimeoutConfig, MediaConfig, RetryConfig
 logger = logging.getLogger(__name__)
 
 
-async def fetch_and_filter_media(
-    subreddit_names, search_terms, sort, time_filter, media_type,
-    remaining_count, fetch_semaphore, update, processed_urls, include_comments=False
-):
-    """
-    Fetches media posts and filters out already processed ones.
-    """
-    try:
-        media_posts = await asyncio.wait_for(
-            fetch_posts_to_list(
-                subreddit_names=subreddit_names,
-                semaphore=fetch_semaphore,
-                search_terms=search_terms,
-                sort=sort,
-                time_filter=time_filter,
-                media_type=media_type,
-                media_count=remaining_count,
-                update=update,
-                include_comments=include_comments,
-            ),
-            timeout=TimeoutConfig.FETCH_TIMEOUT,
-        )
-        filtered = [post for post in media_posts if post.url not in processed_urls]
-        logger.info(f"Filtered out {len(media_posts) - len(filtered)} duplicate posts.")
-        return filtered
-    except asyncio.TimeoutError:
-        raise RuntimeError("Fetching media posts timed out. Please try again later.")
-    except Exception as e:
-        raise RuntimeError(f"Error fetching media posts: {e}")
-
-
 async def pipeline(
     update, subreddit_names: list[str], search_terms: list[str],
     sort: str = "hot", time_filter: str = None, media_count: int = 1,
@@ -69,14 +38,14 @@ async def pipeline(
                 break
 
             logger.info(f"Fetching {remaining_count} more posts.")
-            filtered_media = await fetch_and_filter_media(
+            filtered_media = await fetch_posts_to_list(
                 subreddit_names=subreddit_names,
                 search_terms=search_terms,
                 sort=sort,
                 time_filter=time_filter,
                 media_type=media_type,
-                remaining_count=remaining_count,
-                fetch_semaphore=fetch_semaphore,
+                media_count=remaining_count,
+                semaphore=fetch_semaphore,
                 update=update,
                 processed_urls=processed_urls,
                 include_comments=include_comments,

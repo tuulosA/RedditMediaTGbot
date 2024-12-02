@@ -26,13 +26,15 @@ async def fetch_posts_to_list(
     update=None,
     invalid_subreddits: Optional[Set[str]] = None,
     include_comments: bool = False,
+    processed_urls: Optional[Set[str]] = None,
 ) -> List[Submission]:
     """
-    Fetch media posts from multiple subreddits asynchronously with balanced distribution.
-    Exclusively handles Submission objects.
+    Fetch and filter media posts from multiple subreddits asynchronously.
+    Removes already processed posts based on `processed_urls`.
     """
     semaphore = semaphore or asyncio.Semaphore(MediaConfig.DEFAULT_SEMAPHORE_LIMIT)
     invalid_subreddits = invalid_subreddits or set()
+    processed_urls = processed_urls or set()
     processed_post_ids = set()
     remaining_posts = media_count
 
@@ -58,11 +60,19 @@ async def fetch_posts_to_list(
     ]
 
     # Process tasks as they complete
-    results = await asyncio.gather(*fetch_tasks, return_exceptions=True)
-    media_posts = [post for result in results if isinstance(result, list) for post in result]
+    try:
+        results = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+        media_posts = [post for result in results if isinstance(result, list) for post in result]
 
-    logger.info(f"Fetched {len(media_posts)} total media posts across all subreddits.")
-    return media_posts[:media_count]  # Ensure hard limit
+        # Filter out processed URLs
+        filtered_posts = [post for post in media_posts if post.url not in processed_urls]
+        logger.info(f"Filtered out {len(media_posts) - len(filtered_posts)} already processed posts.")
+
+        return filtered_posts[:media_count]  # Return up to the requested count
+    except asyncio.TimeoutError:
+        raise RuntimeError("Fetching media posts timed out. Please try again later.")
+    except Exception as e:
+        raise RuntimeError(f"Error fetching and filtering media posts: {e}")
 
 
 async def fetch_from_subreddit(
