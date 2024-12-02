@@ -132,10 +132,6 @@ async def pipeline(
         if total_processed < media_count:
             await notify_user(update, f"Only {total_processed}/{media_count} unique media posts found.")
 
-        # Log all posts and summary
-        from bot.utils.fetch_utils import log_all_posts_to_file
-        for subreddit in subreddit_names:
-            await log_all_posts_to_file(subreddit, successfully_sent_posts)
         log_summary(successfully_sent_posts)
         logger.info(f"Pipeline completed: {total_processed}/{media_count} media posts processed.")
 
