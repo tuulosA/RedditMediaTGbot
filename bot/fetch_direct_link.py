@@ -155,5 +155,4 @@ async def yt_dlp_download(media_url: str) -> Tuple[Optional[str], Optional[str]]
         logger.error("yt-dlp completed but no valid file found.")
     except Exception as e:
         logger.error(f"yt-dlp download error: {e}", exc_info=True)
-        add_to_blacklist(media_url)
     return None, temp_dir

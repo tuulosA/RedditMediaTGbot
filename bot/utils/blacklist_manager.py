@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 def load_blacklist():
     """Load the blacklist of dead links from a JSON file."""
     if not os.path.exists(Paths.BLACKLIST_FILE):
-        logger.info(f"Blacklist file not found. Creating a new blacklist: {Paths.BLACKLIST_FILE}")
         return set()
     try:
         with open(Paths.BLACKLIST_FILE, "r", encoding="utf-8") as file:
