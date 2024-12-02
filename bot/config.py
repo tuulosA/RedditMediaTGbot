@@ -44,7 +44,6 @@ class TimeoutConfig:
 
 class RetryConfig:
     RETRY_ATTEMPTS = 3
-    RETRY_DELAY = 2
     MAX_RETRIES = 2
 
 
@@ -58,10 +57,7 @@ class MediaConfig:
 class Messages:
     USAGE_MESSAGE = "Usage: /r [all/year/month/week] [subreddit(s)] [term(s)] [count] [image/video]"
     INVALID_FORMAT_MESSAGE = "Invalid command format. Example: /r [time_filter] [subreddits] [search_terms] [media_type] [media_count]"
-    MAX_MEDIA_COUNT_MESSAGE = "Maximum of 5 files can be requested."
 
 
 class Paths:
     BLACKLIST_FILE = os.path.join(os.getcwd(), "dead_links.json")
-    FETCHED_POSTS_LOG_PATH = os.path.join(os.getcwd(), "fetched_posts_log.txt")
-    CONFIG_PATH = os.path.join(os.path.dirname(__file__), "reddit_config.json")
