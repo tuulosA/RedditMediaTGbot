@@ -6,11 +6,9 @@ from asyncpraw.models import Submission
 logger = logging.getLogger(__name__)
 
 
-def should_skip_post(
-    post: Submission, processed_urls: Set[str], media_type: Optional[str]
-) -> Optional[str]:
+def should_skip_post(post: Submission, processed_urls: Set[str], media_type: Optional[str]) -> Optional[str]:
     """
-    Determines if a post should be skipped and returns the reason for skipping.
+    Determines if a post should be skipped and returns the reason.
     """
     if not post.url or not is_valid_media_url(post.url):
         return "non-media"
@@ -27,36 +25,25 @@ def should_skip_post(
 
 def is_valid_media_url(url: str) -> bool:
     """
-    Validate if the given URL points to a supported media type or matches a known pattern.
+    Validates if a URL is a supported media type or pattern.
     """
     valid_extensions = (".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webm", ".gifv")
     supported_patterns = ["bot.com/gallery/", "v.redd.it", "i.redd.it", "imgur.com"]
-
-    if url.lower().endswith(valid_extensions) or any(pattern in url for pattern in supported_patterns):
-        return True
-    return False
+    return url.lower().endswith(valid_extensions) or any(pattern in url for pattern in supported_patterns)
 
 
 def filter_posts_by_type(url: str, media_type: Optional[str]) -> bool:
     """
-    Filters posts based on the specified media type ('image' or 'video').
-    Treats .gif files as videos and includes gallery URLs as images.
+    Filters posts based on the specified media type.
     """
-    if not media_type:
-        return True
-
     url_lower = url.lower()
-
-    if "bot.com/gallery/" in url_lower and media_type == "image":
-        return True
-    if media_type == "image" and url_lower.endswith(("jpg", "jpeg", "png")):
-        return True
-    if media_type == "video" and url_lower.endswith(("mp4", "webm", "gifv", "gif")):
-        return True
-    if "v.redd.it" in url_lower:
-        return media_type == "video"
-
-    return False
+    return (
+        not media_type or
+        (media_type == "image" and url_lower.endswith(("jpg", "jpeg", "png"))) or
+        (media_type == "video" and url_lower.endswith(("mp4", "webm", "gifv", "gif"))) or
+        ("bot.com/gallery/" in url_lower and media_type == "image") or
+        ("v.redd.it" in url_lower and media_type == "video")
+    )
 
 
 def is_gfycat_url(url: str) -> bool:
@@ -68,7 +55,7 @@ def is_gfycat_url(url: str) -> bool:
 
 def attach_post_metadata(post: Submission) -> None:
     """
-    Attach metadata fields directly to a Submission object as attributes.
+    Attach metadata to a Submission object.
     """
     post.metadata = {
         "title": (post.title or "Unknown")[:100],
@@ -81,9 +68,6 @@ def attach_post_metadata(post: Submission) -> None:
 
 def log_skipped_reasons(skip_reasons: dict) -> None:
     """
-    Log a summary of skipped reasons.
+    Logs a summary of skipped reasons.
     """
-    logger.info(
-        "Skipped posts summary: "
-        + ", ".join(f"{reason}: {count}" for reason, count in skip_reasons.items())
-    )
+    logger.info("Skipped posts summary: " + ", ".join(f"{reason}: {count}" for reason, count in skip_reasons.items()))

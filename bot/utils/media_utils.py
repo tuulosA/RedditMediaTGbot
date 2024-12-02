@@ -127,7 +127,7 @@ async def fetch_top_comment(media_data: Submission) -> Optional[str]:
     try:
         await media_data.comments()
         for comment in media_data.comments.list():
-            if comment.body and not any(kw in comment.body.lower() for kw in ["http", "www", "[deleted]"]):
+            if comment.body and not any(kw in comment.body.lower() for kw in ["http", "www", ".com", "[deleted]", "sauce", "[removed]", "u/", "source"]):
                 return comment.body
     except Exception as e:
         logger.warning(f"Failed to fetch comment: {e}")

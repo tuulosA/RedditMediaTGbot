@@ -36,7 +36,7 @@ async def process_media_batch(
             process_media(media, reddit_instance, update, session, include_comments) for media in media_list
         ]
         results = await asyncio.gather(*tasks)
-    return [result for result in results if result]  # Filter out None
+    return [result for result in results if result]
 
 
 async def process_media(

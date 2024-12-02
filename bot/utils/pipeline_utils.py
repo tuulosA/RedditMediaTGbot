@@ -40,18 +40,6 @@ def log_summary(posts: List[Submission]):
         logger.info(f"Title: {post.title}, URL: {post.url}")
 
 
-def clear_fetched_posts_log():
-    """
-    Clears the fetched posts log file at the start of a new pipeline run.
-    """
-    try:
-        with open(Paths.FETCHED_POSTS_LOG_PATH, "w") as file:
-            file.write("")  # Overwrite the file with an empty string
-        logger.info("Cleared the fetched posts log file.")
-    except Exception as e:
-        logger.error(f"Failed to clear fetched posts log file: {e}", exc_info=True)
-
-
 async def validate_subreddits(reddit_instance, subreddit_names):
     """
     Validates if the given subreddits exist and are accessible.

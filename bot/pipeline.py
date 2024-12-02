@@ -8,7 +8,6 @@ from bot.utils.pipeline_utils import (
     notify_user,
     log_summary,
     validate_subreddits,
-    clear_fetched_posts_log,
 )
 from bot.config import TimeoutConfig, MediaConfig, RetryConfig
 
@@ -73,7 +72,6 @@ async def pipeline(
     """
     Main pipeline for fetching and processing media posts from Reddit.
     """
-    clear_fetched_posts_log()
     logger.info(
         f"Starting pipeline with subreddits: {', '.join(subreddit_names)}, "
         f"search terms: {search_terms}, sort: {sort}, "
