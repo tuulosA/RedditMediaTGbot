@@ -8,22 +8,18 @@ from bot.commands import reddit_media_command
 load_dotenv()
 
 def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
-    if not logger.hasHandlers():
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
-
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        ch.setFormatter(formatter)
-
-        logger.addHandler(ch)
-
-    return logger
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.StreamHandler()
+        ],
+    )
+    logging.getLogger("telegram").setLevel(logging.WARNING)
 
 def main():
-    logger = setup_logging()
+    setup_logging()
+    logger = logging.getLogger(__name__)
     logger.info("Bot is starting...")
 
     # Telegram API key from environment variables
@@ -32,7 +28,6 @@ def main():
         raise ValueError("TELEGRAM_API_KEY environment variable is not set. Please add it to your .env file.")
 
     application = Application.builder().token(telegram_api_key).build()
-
     application.add_handler(CommandHandler('r', reddit_media_command))
 
     application.run_polling()
@@ -41,4 +36,4 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        print(f"Error starting the bot: {e}")
+        logging.getLogger(__name__).critical(f"Error starting the bot: {e}", exc_info=True)
