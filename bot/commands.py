@@ -9,28 +9,23 @@ logger = logging.getLogger(__name__)
 
 
 async def reddit_media_command(update: Update, context: CallbackContext) -> None:
-    logger.info(f"Received /r command from user: {update.message.from_user.username}")
+    logger.info(f"Received /r command from {update.message.from_user.username}")
 
     if not context.args:
         await update.message.reply_text(Messages.USAGE_MESSAGE)
-        logger.warning("No arguments provided in /r command")
+        logger.warning("No arguments provided.")
         return
 
     try:
-        time_filter, subreddit_names, search_terms, media_count, media_type, include_comments = await parse_command_args(update, context)
+        parsed_args = await parse_command_args(update, context)
+        time_filter, subreddit_names, search_terms, media_count, media_type, include_comments = parsed_args
 
         if not subreddit_names:
-            logger.warning("Subreddit names not provided or invalid")
             await update.message.reply_text("Please specify at least one valid subreddit.")
+            logger.warning("No valid subreddit names provided.")
             return
 
-        logger.info(
-            f"Parsed command: time_filter={time_filter}, subreddits={subreddit_names}, "
-            f"search_terms={search_terms}, media_count={media_count}, media_type={media_type}, "
-            f"include_comments={include_comments}"
-        )
-
-        # Start the pipeline
+        logger.info(f"Parsed command arguments: {parsed_args}")
         await pipeline(
             update,
             subreddit_names,
@@ -43,8 +38,8 @@ async def reddit_media_command(update: Update, context: CallbackContext) -> None
         )
 
     except ValueError as e:
-        logger.error(f"Argument parsing failed: {e}")
         await update.message.reply_text(str(e))
+        logger.error(f"Argument parsing failed: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error in reddit_media_command: {e}", exc_info=True)
         await update.message.reply_text("An unexpected error occurred. Please try again.")
+        logger.error(f"Unexpected error: {e}", exc_info=True)

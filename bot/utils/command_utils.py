@@ -2,49 +2,50 @@ import logging
 from telegram import Update
 from telegram.ext import CallbackContext
 from bot.config import Messages, MediaConfig
-from typing import List
+from typing import List, Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
 
-async def parse_command_args(update: Update, context: CallbackContext) -> tuple:
+async def parse_command_args(update: Update, context: CallbackContext) -> Tuple:
     """
-    Parse command arguments and validate them.
+    Parse and validate command arguments.
     """
-    logger.info(f"Parsing command arguments for user: {update.message.from_user.username}")
-
-    if len(context.args) < 1:
+    if not context.args:
         raise ValueError(Messages.INVALID_FORMAT_MESSAGE)
 
-    # Extract time filter if present
-    time_filter = None
-    first_arg = context.args[0].lower()
-    if first_arg in ["all", "year", "month", "week"]:
-        time_filter = first_arg
-        context.args.pop(0)
-
-    if len(context.args) < 1:
+    time_filter, args = extract_time_filter(context.args)
+    if not args:
         raise ValueError("Please specify at least one subreddit.")
 
-    subreddit_names = parse_subreddits(context.args[0])
-    media_count, media_type, search_terms, include_comments = parse_other_args(context.args[1:])
+    subreddit_names = parse_subreddits(args[0])
+    media_count, media_type, search_terms, include_comments = parse_other_args(args[1:])
 
+    logger.info(f"Command parsed for {update.message.from_user.username}: {locals()}")
     return time_filter, subreddit_names, search_terms, media_count, media_type, include_comments
+
+
+def extract_time_filter(args: List[str]) -> Tuple[Optional[str], List[str]]:
+    """
+    Extracts the time filter if present and returns the remaining arguments.
+    """
+    time_filter = args[0].lower() if args[0].lower() in ["all", "year", "month", "week"] else None
+    return time_filter, args[1:] if time_filter else args
 
 
 def parse_subreddits(arg: str) -> List[str]:
     """
-    Parse and validate subreddit names.
+    Validates and splits subreddit names.
     """
-    subreddits = arg.split(",")
-    if not all(subreddits):
+    subreddits = [sub.strip() for sub in arg.split(",") if sub.strip()]
+    if not subreddits:
         raise ValueError("Invalid subreddit format. Ensure names are comma-separated.")
     return subreddits
 
 
-def parse_other_args(args: List[str]) -> tuple:
+def parse_other_args(args: List[str]) -> Tuple[int, Optional[str], List[str], bool]:
     """
-    Parse search terms, media type, media count, and the include_comments flag.
+    Parses media count, type, search terms, and include_comments flag.
     """
     media_count = 1
     media_type = None
@@ -52,31 +53,13 @@ def parse_other_args(args: List[str]) -> tuple:
     include_comments = False
 
     for arg in args:
-        # Check for the `-c` flag
         if arg.lower() == "-c":
             include_comments = True
-            continue
-
-        # Check for media count
-        try:
-            count = int(arg)
-            if 1 <= count <= MediaConfig.MAX_MEDIA_COUNT:
-                media_count = count
-            elif count > MediaConfig.MAX_MEDIA_COUNT:
-                raise ValueError(f"Only up to {MediaConfig.MAX_MEDIA_COUNT} posts can be fetched at once.")
-            continue
-        except ValueError as e:
-            # If a number is greater than MAX_MEDIA_COUNT, raise an error
-            if str(e).startswith("Only up to"):
-                raise e
-            pass
-
-        # Check for media type
-        if arg.lower() in ["image", "video"]:
+        elif arg.isdigit() and (1 <= int(arg) <= MediaConfig.MAX_MEDIA_COUNT):
+            media_count = int(arg)
+        elif arg.lower() in ["image", "video"]:
             media_type = arg.lower()
-            continue
-
-        # Treat everything else as a search term
-        search_terms.append(arg.lower())
+        else:
+            search_terms.append(arg.lower())
 
     return media_count, media_type, search_terms, include_comments
