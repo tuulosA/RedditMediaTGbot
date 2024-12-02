@@ -6,6 +6,7 @@ import subprocess
 from typing import Optional, Tuple
 from bot.utils.tempfile_utils import create_temp_dir
 from bot.utils.blacklist_manager import add_to_blacklist
+from bot.config import TimeoutConfig
 
 logger = logging.getLogger(__name__)
 
@@ -84,15 +85,21 @@ async def find_valid_dash_url(dash_urls: list[str], session: aiohttp.ClientSessi
 
 async def download_file(url: str, file_path: str, session: aiohttp.ClientSession) -> Optional[str]:
     """
-    Downloads a file from a URL to the specified path.
+    Downloads a file from a URL to the specified path, streaming it in chunks.
     """
     try:
-        async with session.get(url, timeout=20) as response:
+        timeout = aiohttp.ClientTimeout(total=TimeoutConfig.DOWNLOAD_TIMEOUT)
+        async with session.get(url, timeout=timeout) as response:
             if response.status == 200:
                 with open(file_path, 'wb') as file:
-                    file.write(await response.read())
+                    while chunk := await response.content.read(1024 * 1024):
+                        file.write(chunk)
                 logger.info(f"Downloaded media to: {file_path}")
                 return file_path
+            else:
+                logger.error(f"Failed to download media. HTTP {response.status} for URL: {url}")
+    except asyncio.TimeoutError:
+        logger.error(f"Download timed out for URL: {url}")
     except Exception as e:
         logger.error(f"Error downloading file from {url}: {e}", exc_info=True)
     return None
