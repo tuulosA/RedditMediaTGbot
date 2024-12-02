@@ -21,6 +21,9 @@ async def parse_command_args(update: Update, context: CallbackContext) -> Tuple:
     subreddit_names = parse_subreddits(args[0])
     media_count, media_type, search_terms, include_comments = parse_other_args(args[1:])
 
+    if media_count > MediaConfig.MAX_MEDIA_COUNT:
+        raise ValueError(Messages.MAX_COUNT_EXCEEDED_MESSAGE)
+
     logger.info(f"Command parsed for {update.message.from_user.username}: {locals()}")
     return time_filter, subreddit_names, search_terms, media_count, media_type, include_comments
 
@@ -55,8 +58,12 @@ def parse_other_args(args: List[str]) -> Tuple[int, Optional[str], List[str], bo
     for arg in args:
         if arg.lower() == "-c":
             include_comments = True
-        elif arg.isdigit() and (1 <= int(arg) <= MediaConfig.MAX_MEDIA_COUNT):
-            media_count = int(arg)
+        elif arg.isdigit():
+            count = int(arg)
+            if count <= MediaConfig.MAX_MEDIA_COUNT:
+                media_count = count
+            else:
+                raise ValueError(Messages.MAX_COUNT_EXCEEDED_MESSAGE)
         elif arg.lower() in ["image", "video"]:
             media_type = arg.lower()
         else:

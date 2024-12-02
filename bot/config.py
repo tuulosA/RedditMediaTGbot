@@ -57,6 +57,7 @@ class MediaConfig:
 class Messages:
     USAGE_MESSAGE = "Usage: /r [all/year/month/week] [subreddit(s)] [term(s)] [count] [image/video]"
     INVALID_FORMAT_MESSAGE = "Invalid command format. Example: /r [time_filter] [subreddits] [search_terms] [media_type] [media_count]"
+    MAX_COUNT_EXCEEDED_MESSAGE = f"Maximum of {MediaConfig.MAX_MEDIA_COUNT} media files can be fetched at a time."
 
 
 class Paths:
