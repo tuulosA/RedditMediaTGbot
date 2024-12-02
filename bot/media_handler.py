@@ -53,7 +53,7 @@ async def process_media(
         logger.warning("Media URL is missing or invalid.")
         return None
 
-    file_path = None  # Initialize the variable to avoid referencing before assignment
+    file_path = None
 
     try:
         top_comment = await fetch_top_comment(media_data) if include_comments else None
