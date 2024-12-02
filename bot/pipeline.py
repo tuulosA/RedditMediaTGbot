@@ -3,28 +3,15 @@ import logging
 from bot import get_reddit_client
 from bot.fetch import fetch_posts_to_list
 from bot.media_handler import process_media_batch
-from bot.utils.pipeline_utils import (
-    initialize_client,
-    notify_user,
-    log_summary,
-    validate_subreddits,
-)
+from bot.utils.pipeline_utils import initialize_client, notify_user, log_summary, validate_subreddits
 from bot.config import TimeoutConfig, MediaConfig, RetryConfig
 
 logger = logging.getLogger(__name__)
 
 
 async def fetch_and_filter_media(
-    subreddit_names,
-    search_terms,
-    sort,
-    time_filter,
-    media_type,
-    remaining_count,
-    fetch_semaphore,
-    update,
-    processed_urls,
-    include_comments=False,
+    subreddit_names, search_terms, sort, time_filter, media_type,
+    remaining_count, fetch_semaphore, update, processed_urls, include_comments=False
 ):
     """
     Fetches media posts and filters out already processed ones.
@@ -44,64 +31,44 @@ async def fetch_and_filter_media(
             ),
             timeout=TimeoutConfig.FETCH_TIMEOUT,
         )
-
-        filtered_media = [
-            post for post in media_posts if post.url not in processed_urls
-        ]
-        logger.info(f"Filtered {len(media_posts) - len(filtered_media)} already processed posts.")
-        return filtered_media
+        filtered = [post for post in media_posts if post.url not in processed_urls]
+        logger.info(f"Filtered out {len(media_posts) - len(filtered)} duplicate posts.")
+        return filtered
     except asyncio.TimeoutError:
-        logger.error("Timeout occurred while fetching media posts.")
         raise RuntimeError("Fetching media posts timed out. Please try again later.")
     except Exception as e:
-        logger.error(f"Error fetching media posts: {e}", exc_info=True)
-        raise RuntimeError("An error occurred while fetching media posts. Please try again.")
+        raise RuntimeError(f"Error fetching media posts: {e}")
 
 
 async def pipeline(
-    update,
-    subreddit_names: list[str],
-    search_terms: list[str],
-    sort: str = "hot",
-    time_filter: str = None,
-    media_count: int = 1,
-    media_type: str = None,
-    include_comments: bool = False,
+    update, subreddit_names: list[str], search_terms: list[str],
+    sort: str = "hot", time_filter: str = None, media_count: int = 1,
+    media_type: str = None, include_comments: bool = False,
     fetch_semaphore_limit: int = MediaConfig.DEFAULT_SEMAPHORE_LIMIT,
 ):
     """
     Main pipeline for fetching and processing media posts from Reddit.
     """
-    logger.info(
-        f"Starting pipeline with subreddits: {', '.join(subreddit_names)}, "
-        f"search terms: {search_terms}, sort: {sort}, "
-        f"time filter: {time_filter}, media count: {media_count}, include_comments={include_comments}"
-    )
-
+    logger.info(f"Starting pipeline for subreddits: {', '.join(subreddit_names)}")
     fetch_semaphore = asyncio.Semaphore(fetch_semaphore_limit)
-    total_processed, retry_attempts, backoff = 0, 0, 1
-    successfully_sent_posts, processed_urls = [], set()
+    processed_urls, total_processed, backoff = set(), 0, 1
+    successfully_sent_posts = []
 
     try:
-        # Initialize Reddit client and validate subreddits
         reddit_instance = await initialize_client(get_reddit_client)
         valid_subreddits = await validate_subreddits(reddit_instance, subreddit_names)
         if not valid_subreddits:
-            await notify_user(update, "None of the specified subreddits exist or are accessible.")
-            logger.warning(f"Invalid subreddits: {', '.join(subreddit_names)}")
-            return
+            return await notify_user(update, "No valid or accessible subreddits provided.")
 
-        if len(valid_subreddits) < len(subreddit_names):
-            invalid_subreddits = set(subreddit_names) - set(valid_subreddits)
-            await notify_user(update, f"Some subreddits are invalid or inaccessible: {', '.join(invalid_subreddits)}")
-            logger.warning(f"Invalid subreddits: {', '.join(invalid_subreddits)}")
-            subreddit_names = valid_subreddits
+        subreddit_names = valid_subreddits
+        logger.info(f"Valid subreddits: {', '.join(subreddit_names)}")
 
-        # Main processing loop
-        while total_processed < media_count and retry_attempts < RetryConfig.MAX_RETRIES:
+        for _ in range(RetryConfig.MAX_RETRIES):
             remaining_count = media_count - total_processed
-            logger.info(f"Fetching posts. Total processed: {total_processed}/{media_count}")
+            if remaining_count <= 0:
+                break
 
+            logger.info(f"Fetching {remaining_count} more posts.")
             filtered_media = await fetch_and_filter_media(
                 subreddit_names=subreddit_names,
                 search_terms=search_terms,
@@ -116,10 +83,9 @@ async def pipeline(
             )
 
             if not filtered_media:
-                logger.warning(f"No new media found. Retrying ({retry_attempts + 1}/{RetryConfig.MAX_RETRIES})...")
-                retry_attempts += 1
+                logger.warning(f"No new media found. Retrying after backoff ({backoff}s).")
                 await asyncio.sleep(backoff)
-                backoff = min(backoff * 2, 30)  # Exponential backoff, capped at 30 seconds
+                backoff = min(backoff * 2, 30)  # Exponential backoff
                 continue
 
             processed_urls.update(post.url for post in filtered_media)
@@ -128,15 +94,13 @@ async def pipeline(
             total_processed += len(processed)
 
         if total_processed < media_count:
-            await notify_user(update, f"Only {total_processed}/{media_count} unique media posts found.")
+            await notify_user(update, f"Only {total_processed}/{media_count} posts found.")
 
         log_summary(successfully_sent_posts)
-        logger.info(f"Pipeline completed: {total_processed}/{media_count} media posts processed.")
-
+        logger.info("Pipeline completed successfully.")
     except RuntimeError as e:
         await notify_user(update, str(e))
+        logger.error(f"Pipeline error: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error in pipeline: {e}", exc_info=True)
-        await notify_user(update, "An unexpected error occurred. Please try again.")
-    finally:
-        logger.info("Pipeline execution finished.")
+        await notify_user(update, "An unexpected error occurred.")
+        logger.error(f"Unexpected pipeline error: {e}", exc_info=True)
