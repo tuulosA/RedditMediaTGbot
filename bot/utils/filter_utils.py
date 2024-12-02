@@ -28,7 +28,7 @@ def is_valid_media_url(url: str) -> bool:
     Validates if a URL is a supported media type or pattern.
     """
     valid_extensions = (".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webm", ".gifv")
-    supported_patterns = ["bot.com/gallery/", "v.redd.it", "i.redd.it", "imgur.com"]
+    supported_patterns = ["/gallery/", "v.redd.it", "i.redd.it", "imgur.com"]
     return url.lower().endswith(valid_extensions) or any(pattern in url for pattern in supported_patterns)
 
 
@@ -41,7 +41,7 @@ def filter_posts_by_type(url: str, media_type: Optional[str]) -> bool:
         not media_type or
         (media_type == "image" and url_lower.endswith(("jpg", "jpeg", "png"))) or
         (media_type == "video" and url_lower.endswith(("mp4", "webm", "gifv", "gif"))) or
-        ("bot.com/gallery/" in url_lower and media_type == "image") or
+        ("/gallery/" in url_lower and media_type == "image") or
         ("v.redd.it" in url_lower and media_type == "video")
     )
 
