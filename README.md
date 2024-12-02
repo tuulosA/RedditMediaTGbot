@@ -1,6 +1,6 @@
 # RedditMediaTGbot
 
-An asynchronous Python bot designed to fetch, process, and directly deliver images or videos from Reddit subreddits to Telegram.
+An asynchronous Reddit Media Telegram bot designed to fetch, process, and directly deliver images or videos from specified subreddits to Telegram.
 
 ---
 
