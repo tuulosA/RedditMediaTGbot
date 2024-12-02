@@ -19,6 +19,7 @@ from bot.utils.compressor import is_file_size_valid
 from bot.fetch_direct_link import fetch_direct_link
 from bot.config import MediaConfig, RetryConfig, TimeoutConfig
 from bot.utils.tempfile_utils import create_temp_dir
+import cv2
 
 logger = logging.getLogger(__name__)
 
@@ -129,12 +130,46 @@ async def download_media(resolved_url: str, session: aiohttp.ClientSession) -> O
 
 async def send_to_telegram(file_path: str, update: Update, caption: Optional[str] = None) -> bool:
     """
-    Sends a media file to Telegram with retry logic.
+    Sends a media file to Telegram with retry logic, ensuring valid video dimensions for videos.
     """
     media_type = determine_media_type(file_path)
     if not media_type:
+        logger.warning(f"Unsupported media type: {file_path}")
         return False
 
+    bot = update.get_bot()
+
+    # Handle video files with explicit dimensions to avoid stretched videos on mobile
+    if file_path.lower().endswith((".mp4", ".webm")):
+        cap = cv2.VideoCapture(file_path)
+        width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+
+        if not (width and height):
+            logger.error(f"Invalid video dimensions for file: {file_path}")
+            return False
+
+        # Use explicit dimensions for videos
+        for attempt in range(RetryConfig.RETRY_ATTEMPTS):
+            try:
+                with open(file_path, "rb") as video_file:
+                    await bot.send_video(
+                        chat_id=update.effective_chat.id,
+                        video=video_file,
+                        width=width,
+                        height=height,
+                        supports_streaming=True,
+                        caption=caption
+                    )
+                logger.info(f"Video sent successfully: {file_path}")
+                return True
+            except TimedOut:
+                logger.warning(f"Timeout on attempt {attempt + 1} for {file_path}")
+            except Exception as e:
+                logger.error(f"Error sending video: {e}", exc_info=True)
+        return False
+
+    # Handle non-video media
     for attempt in range(RetryConfig.RETRY_ATTEMPTS):
         try:
             await media_type(file_path, update, caption=caption)
@@ -144,4 +179,5 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
             logger.warning(f"Timeout on attempt {attempt + 1} for {file_path}")
         except Exception as e:
             logger.error(f"Error sending file: {e}", exc_info=True)
-    return False
+
+    logger.error(f"Failed to send media after {RetryConfig.RETRY_ATTEMPTS} attempts: {file_path}")
