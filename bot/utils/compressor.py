@@ -34,7 +34,7 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
     """
     Compresses a video to ensure it is below the specified size limit.
     """
-    crf = 32  # Starting compression factor
+    crf = 28  # Starting compression factor
     max_bitrate = 2000  # Starting bitrate (in kbps)
 
     for attempt in range(max_attempts):

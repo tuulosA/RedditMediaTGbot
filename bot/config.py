@@ -38,7 +38,6 @@ class RedditConfig:
 
 
 class TimeoutConfig:
-    FETCH_TIMEOUT = 120
     DOWNLOAD_TIMEOUT = 300
 
 

@@ -4,7 +4,7 @@ from bot import get_reddit_client
 from bot.fetch import fetch_posts_to_list
 from bot.media_handler import process_media_batch
 from bot.utils.pipeline_utils import initialize_client, notify_user, log_summary, validate_subreddits
-from bot.config import TimeoutConfig, MediaConfig, RetryConfig
+from bot.config import MediaConfig, RetryConfig
 
 logger = logging.getLogger(__name__)
 
