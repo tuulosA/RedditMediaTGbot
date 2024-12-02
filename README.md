@@ -81,13 +81,13 @@ Example Breakdown:
 
 The bot recognizes flexible commands through Telegram:
 
-| Command Example          | Description                                                        |
-|--------------------------|--------------------------------------------------------------------|
-| `/r all pics lake`       | Fetch all time top posts from r/pics with search term 'lake'       |
-| `/r gaming video`        | Fetch videos from r/gaming.                                        |
-| `/r funny 5 image`       | Fetch 5 images from r/funny.                                       |
-| `/r cats orange -c`      | Fetch with search 'orange' from /r cats with top comments.         |
-| `/r month movies`        | Fetch top posts from /r movies in the last month.                  |
+| Command Example     | Description                                                        |
+|---------------------|--------------------------------------------------------------------|
+| `/r all pics lake`  | Fetch all time top posts from r/pics with search term 'lake'       |
+| `/r trains video`   | Fetch videos from r/gaming.                                        |
+| `/r funny 5 image`  | Fetch 5 images from r/funny.                                       |
+| `/r cats orange -c` | Fetch with search 'orange' from /r cats with top comments.         |
+| `/r month movies`   | Fetch top posts from /r movies in the last month.                  |
 
 Multiple subreddits and search terms can also be specified, with a comma separation.
 
