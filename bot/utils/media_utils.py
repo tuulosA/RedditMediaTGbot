@@ -1,10 +1,10 @@
-from asyncpraw.models import Submission
 import os
 import logging
 import random
 import subprocess
 from typing import Optional
 from asyncpraw import Reddit
+from asyncpraw.models import Submission
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
