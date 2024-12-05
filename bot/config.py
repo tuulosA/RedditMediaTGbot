@@ -1,3 +1,4 @@
+#config.py
 import os
 import asyncpraw
 from dotenv import load_dotenv
