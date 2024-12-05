@@ -45,7 +45,7 @@ async def process_v_reddit(media_url: str, session: aiohttp.ClientSession) -> Op
 
     temp_dir = create_temp_dir("reddit_video_")
     temp_file_path = os.path.join(temp_dir, "video.mp4")
-    return await download_file(valid_url, temp_file_path, session)
+    return await download_v_reddit(valid_url, temp_file_path, session)
 
 
 async def process_imgur(media_url: str) -> Optional[str]:
@@ -84,7 +84,7 @@ async def find_valid_dash_url(dash_urls: list[str], session: aiohttp.ClientSessi
     return None
 
 
-async def download_file(url: str, file_path: str, session: aiohttp.ClientSession) -> Optional[str]:
+async def download_v_reddit(url: str, file_path: str, session: aiohttp.ClientSession) -> Optional[str]:
     """
     Downloads a file from a URL to the specified path, streaming it in chunks.
     """
