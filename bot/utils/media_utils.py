@@ -8,6 +8,8 @@ from asyncpraw import Reddit
 from asyncpraw.models import Submission
 from urllib.parse import urlparse
 import asyncio
+from telegram import Update
+import cv2
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +31,24 @@ def determine_media_type(file_path: str):
     return None
 
 
-async def send_video(file_path, update, caption=None):
+async def send_video(file_path: str, update: Update, caption: Optional[str] = None):
+    """
+    Sends a video file to Telegram with explicit video dimensions to avoid stretched videos on mobile.
+    """
+    cap = cv2.VideoCapture(file_path)
+    width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    cap.release()
+
+    if not (width and height):
+        raise ValueError(f"Invalid video dimensions for file: {file_path}")
+
     bot = update.get_bot()
     with open(file_path, "rb") as video_file:
         await bot.send_video(
             chat_id=update.effective_chat.id,
             video=video_file,
+            width=width,
+            height=height,
             supports_streaming=True,
             caption=caption,
         )
