@@ -1,3 +1,4 @@
+#__init__.py
 from bot.config import RedditConfig
 
 # Global Reddit client instance
