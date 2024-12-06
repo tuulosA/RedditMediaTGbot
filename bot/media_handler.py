@@ -67,7 +67,7 @@ async def process_media(
             return None
 
         # Start download and upload asynchronously
-        download_task = validate_media_download(resolved_url, session)
+        download_task = asyncio.create_task(validate_media_download(resolved_url, session))
         upload_task = asyncio.create_task(wait_and_upload(download_task, update, top_comment))
 
         # Wait for upload to complete
