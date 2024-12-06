@@ -17,7 +17,7 @@ from bot.utils.media_utils import (
     cleanup_file
 )
 from bot.utils.compressor import is_file_size_valid
-from bot.handle_video import handle_direct_link
+from bot.handle_direct_link import handle_direct_link
 from bot.config import MediaConfig, RetryConfig, TimeoutConfig
 from bot.utils.tempfile_utils import create_temp_dir
 import cv2

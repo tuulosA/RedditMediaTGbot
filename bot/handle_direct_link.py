@@ -1,4 +1,4 @@
-#handle_video.py
+#handle_direct_link.py
 import os
 import aiohttp
 import logging
