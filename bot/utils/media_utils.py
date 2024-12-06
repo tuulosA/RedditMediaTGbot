@@ -12,6 +12,45 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 
+def determine_media_type(file_path: str):
+    """
+    Determines the media type based on file extension.
+    """
+    file_extension = os.path.splitext(urlparse(file_path).path)[1].lower()
+
+    if file_extension in (".mp4", ".webm"):
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_video(fp, upd, caption), asyncio.get_event_loop()
+        )
+    elif file_extension in (".jpg", ".jpeg", ".png"):
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_photo(fp, upd, caption), asyncio.get_event_loop()
+        )
+    elif file_extension == ".gif":
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_animation(fp, upd, caption), asyncio.get_event_loop()
+        )
+
+    logger.warning(f"Unsupported media type for file: {file_path}")
+    return None
+
+
+def cleanup_file(file_path: str) -> None:
+    """
+    Deletes a file and its parent directory if empty.
+    """
+    if not file_path:
+        return
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        parent_dir = os.path.dirname(file_path)
+        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
+            os.rmdir(parent_dir)
+    except Exception as e:
+        logger.error(f"Error cleaning up file: {file_path}, {e}", exc_info=True)
+
+
 async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
     """
     Converts a GIF file to MP4 using FFmpeg.
@@ -40,29 +79,6 @@ async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
         logger.error(f"FFmpeg error: {result.stderr.decode()}")
     except Exception as e:
         logger.error(f"Error during GIF to MP4 conversion: {e}", exc_info=True)
-    return None
-
-
-def determine_media_type(file_path: str):
-    """
-    Determines the media type based on file extension.
-    """
-    file_extension = os.path.splitext(urlparse(file_path).path)[1].lower()
-
-    if file_extension in (".mp4", ".webm"):
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_video(fp, upd, caption), asyncio.get_event_loop()
-        )
-    elif file_extension in (".jpg", ".jpeg", ".png"):
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_photo(fp, upd, caption), asyncio.get_event_loop()
-        )
-    elif file_extension == ".gif":
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_animation(fp, upd, caption), asyncio.get_event_loop()
-        )
-
-    logger.warning(f"Unsupported media type for file: {file_path}")
     return None
 
 
@@ -98,22 +114,6 @@ async def validate_file(file_path: str) -> bool:
     else:
         logger.warning(f"Invalid file: {file_path}")
     return is_valid
-
-
-def cleanup_file(file_path: str) -> None:
-    """
-    Deletes a file and its parent directory if empty.
-    """
-    if not file_path:
-        return
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        parent_dir = os.path.dirname(file_path)
-        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
-            os.rmdir(parent_dir)
-    except Exception as e:
-        logger.error(f"Error cleaning up file: {file_path}, {e}", exc_info=True)
 
 
 async def resolve_reddit_gallery(post_id: str, reddit_instance: Reddit) -> Optional[str]:
