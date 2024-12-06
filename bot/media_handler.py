@@ -14,7 +14,8 @@ from bot.utils.media_utils import (
     resolve_reddit_gallery,
     determine_media_type,
     fetch_top_comment,
-    cleanup_file
+    cleanup_file,
+    send_video
 )
 from bot.utils.compressor import is_file_size_valid
 from bot.handle_direct_link import handle_direct_link
@@ -106,7 +107,7 @@ async def validate_media_download(resolved_url: str, session: aiohttp.ClientSess
     """
     try:
         file_path = await download_media(resolved_url, session)
-        if file_path and is_file_size_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
+        if file_path and await is_file_size_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
             return file_path
 
         cleanup_file(file_path)
@@ -121,7 +122,7 @@ async def resolve_media_url(media_url: str, reddit_instance: Reddit, session: ai
     Resolves the final URL for media, including Reddit galleries and direct links.
     """
     try:
-        if media_url.startswith("/tmp") and validate_file(media_url):
+        if media_url.startswith("/tmp") and await validate_file(media_url):
             return media_url
         if "gallery" in media_url:
             return await resolve_reddit_gallery(media_url.split("/")[-1], reddit_instance)
@@ -136,7 +137,7 @@ async def download_media(resolved_url: str, session: aiohttp.ClientSession) -> O
     Downloads media from a resolved URL.
     """
     if os.path.isfile(resolved_url):
-        return resolved_url if validate_file(resolved_url) else None
+        return resolved_url if await validate_file(resolved_url) else None
 
     if not resolved_url.startswith(("http://", "https://")):
         logger.error(f"Invalid URL: {resolved_url}")
@@ -181,15 +182,7 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
         # Use explicit dimensions for videos
         for attempt in range(RetryConfig.RETRY_ATTEMPTS):
             try:
-                with open(file_path, "rb") as video_file:
-                    await bot.send_video(
-                        chat_id=update.effective_chat.id,
-                        video=video_file,
-                        width=width,
-                        height=height,
-                        supports_streaming=True,
-                        caption=caption
-                    )
+                await send_video(file_path, update, caption=caption)
                 logger.info(f"Video sent successfully: {file_path}")
                 return True
             except TimedOut:

@@ -1,13 +1,12 @@
-#compressor.py
 import os
 import logging
-import subprocess
+import asyncio
 from bot.utils.media_utils import cleanup_file
 
 logger = logging.getLogger(__name__)
 
 
-def is_file_size_valid(file_path: str, max_size_mb: int) -> bool:
+async def is_file_size_valid(file_path: str, max_size_mb: int) -> bool:
     """
     Checks if a file's size is within the specified maximum size in MB.
     If the file size exceeds the limit, attempts to compress it.
@@ -24,16 +23,18 @@ def is_file_size_valid(file_path: str, max_size_mb: int) -> bool:
     logger.warning(f"File size exceeds limit: {file_size_mb:.2f} MB > {max_size_mb} MB")
     output_path = file_path.replace(".mp4", "_compressed.mp4")
 
-    if compress_video(file_path, output_path, max_size_mb):
+    if await compress_video(file_path, output_path, max_size_mb):
         os.replace(output_path, file_path)  # Replace the original file with the compressed one
         return True
 
     return False
 
 
-def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, max_attempts: int = 3) -> bool:
+async def compress_video(
+    input_path: str, output_path: str, target_size_mb: int = 50, max_attempts: int = 3
+) -> bool:
     """
-    Compresses a video to ensure it is below the specified size limit.
+    Compresses a video to ensure it is below the specified size limit asynchronously.
     """
     crf = 28  # Starting compression factor
     max_bitrate = 2000  # Starting bitrate (in kbps)
@@ -43,6 +44,7 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
             logger.info(f"Compression attempt {attempt + 1} for {input_path} with CRF={crf}, Max Bitrate={max_bitrate}")
             command = [
                 "ffmpeg",
+                "-y",
                 "-i", input_path,
                 "-vcodec", "libx264",
                 "-crf", str(crf),
@@ -54,7 +56,17 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
                 output_path,
             ]
 
-            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode != 0:
+                logger.error(f"Compression failed: {stderr.decode()}")
+                cleanup_file(output_path)
+                continue
 
             compressed_size_mb = os.path.getsize(output_path) / (1024 * 1024)
             if compressed_size_mb <= target_size_mb:
@@ -64,6 +76,7 @@ def compress_video(input_path: str, output_path: str, target_size_mb: int = 50, 
             else:
                 logger.warning(f"Compressed file exceeds size limit: {compressed_size_mb:.2f} MB > {target_size_mb} MB")
                 cleanup_file(output_path)
+
         except Exception as e:
             logger.error(f"Error during compression attempt {attempt + 1}: {e}", exc_info=True)
 

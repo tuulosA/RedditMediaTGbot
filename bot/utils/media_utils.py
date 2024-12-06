@@ -7,6 +7,7 @@ from typing import Optional
 from asyncpraw import Reddit
 from asyncpraw.models import Submission
 from urllib.parse import urlparse
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
     """
     Converts a GIF file to MP4 using FFmpeg.
     """
-    if not validate_file(gif_path):
+    if not await validate_file(gif_path):
         logger.error(f"File not found for conversion: {gif_path}")
         return None
 
@@ -49,27 +50,54 @@ def determine_media_type(file_path: str):
     file_extension = os.path.splitext(urlparse(file_path).path)[1].lower()
 
     if file_extension in (".mp4", ".webm"):
-        return lambda fp, upd, caption=None: upd.message.reply_video(
-            video=open(fp, "rb"), supports_streaming=True, caption=caption
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_video(fp, upd, caption), asyncio.get_event_loop()
         )
     elif file_extension in (".jpg", ".jpeg", ".png"):
-        return lambda fp, upd, caption=None: upd.message.reply_photo(photo=open(fp, "rb"), caption=caption)
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_photo(fp, upd, caption), asyncio.get_event_loop()
+        )
     elif file_extension == ".gif":
-        return lambda fp, upd, caption=None: upd.message.reply_animation(animation=open(fp, "rb"), caption=caption)
+        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
+            send_animation(fp, upd, caption), asyncio.get_event_loop()
+        )
 
     logger.warning(f"Unsupported media type for file: {file_path}")
     return None
 
 
-def validate_file(file_path: str) -> bool:
+async def send_video(file_path, update, caption=None):
+    with open(file_path, "rb") as video_file:
+        await update.message.reply_video(
+            video=video_file,
+            supports_streaming=True,
+            caption=caption
+        )
+
+
+async def send_photo(file_path, update, caption=None):
+    with open(file_path, "rb") as photo_file:
+        await update.message.reply_photo(photo=photo_file, caption=caption)
+
+
+async def send_animation(file_path, update, caption=None):
+    with open(file_path, "rb") as animation_file:
+        await update.message.reply_animation(animation=animation_file, caption=caption)
+
+
+async def validate_file(file_path: str) -> bool:
     """
-    Validates a file by checking its existence and non-zero size.
+    Asynchronously validates a file by checking its existence and non-zero size.
     """
-    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+    def file_check():
+        return os.path.exists(file_path) and os.path.getsize(file_path) > 0
+
+    is_valid = await asyncio.to_thread(file_check)
+    if is_valid:
         logger.info(f"File validated: {file_path}")
-        return True
-    logger.warning(f"Invalid file: {file_path}")
-    return False
+    else:
+        logger.warning(f"Invalid file: {file_path}")
+    return is_valid
 
 
 def cleanup_file(file_path: str) -> None:
