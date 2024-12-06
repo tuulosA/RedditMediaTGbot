@@ -26,11 +26,15 @@ async def filter_media_posts(
     processed_urls = processed_urls or set()
     skip_reasons = {"non-media": 0, "blacklisted": 0, "processed": 0, "gfycat": 0, "wrong type": 0}
 
-    filtered_posts = [
-        attach_post_metadata(post) or post
-        for post in posts
-        if not (reason := should_skip_post(post, processed_urls, media_type)) or skip_reasons.update({reason: skip_reasons[reason] + 1})
-    ]
+    # Asynchronously process posts
+    filtered_posts = []
+    for post in posts:
+        reason = should_skip_post(post, processed_urls, media_type)
+        if reason:
+            skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
+        else:
+            await attach_post_metadata(post)
+            filtered_posts.append(post)
 
     log_skipped_reasons(skip_reasons)
 
@@ -38,6 +42,7 @@ async def filter_media_posts(
         logger.info(f"No {media_type or 'media'} posts found in r/{subreddit_name}.")
         return []
 
+    # Randomly select posts if more than needed
     selected_posts = sample(filtered_posts, min(len(filtered_posts), media_count))
     logger.info(f"Selected {len(selected_posts)} posts from r/{subreddit_name}.")
     return selected_posts

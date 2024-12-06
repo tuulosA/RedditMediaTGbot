@@ -7,6 +7,19 @@ from asyncpraw.models import Submission
 logger = logging.getLogger(__name__)
 
 
+async def attach_post_metadata(post: Submission) -> None:
+    """
+    Asynchronously attach metadata to a Submission object.
+    """
+    post.metadata = {
+        "title": (post.title or "Unknown")[:100],
+        "url": post.url,
+        "id": post.id,
+        "link_flair_text": (post.link_flair_text or "None")[:50],
+        "file_path": None,
+    }
+
+
 def should_skip_post(post: Submission, processed_urls: Set[str], media_type: Optional[str]) -> Optional[str]:
     """
     Determines if a post should be skipped and returns the reason.
@@ -52,19 +65,6 @@ def is_gfycat_url(url: str) -> bool:
     Check if a URL is a Gfycat URL.
     """
     return "gfycat.com" in url.lower()
-
-
-def attach_post_metadata(post: Submission) -> None:
-    """
-    Attach metadata to a Submission object.
-    """
-    post.metadata = {
-        "title": (post.title or "Unknown")[:100],
-        "url": post.url,
-        "id": post.id,
-        "link_flair_text": (post.link_flair_text or "None")[:50],
-        "file_path": None,
-    }
 
 
 def log_skipped_reasons(skip_reasons: dict) -> None:
