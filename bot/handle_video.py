@@ -1,4 +1,4 @@
-#fetch_direct_link.py
+#handle_video.py
 import os
 import aiohttp
 import logging
@@ -12,7 +12,7 @@ from bot.config import TimeoutConfig
 logger = logging.getLogger(__name__)
 
 
-async def fetch_direct_link(media_url: str, session: aiohttp.ClientSession) -> Optional[str]:
+async def handle_direct_link(media_url: str, session: aiohttp.ClientSession) -> Optional[str]:
     """
     Resolves a direct media link from a given URL.
     """

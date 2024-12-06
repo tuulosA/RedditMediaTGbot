@@ -17,7 +17,7 @@ from bot.utils.media_utils import (
     cleanup_file
 )
 from bot.utils.compressor import is_file_size_valid
-from bot.fetch_direct_link import fetch_direct_link
+from bot.handle_video import handle_direct_link
 from bot.config import MediaConfig, RetryConfig, TimeoutConfig
 from bot.utils.tempfile_utils import create_temp_dir
 import cv2
@@ -97,7 +97,7 @@ async def resolve_media_url(media_url: str, reddit_instance: Reddit, session: ai
             return media_url
         if "gallery" in media_url:
             return await resolve_reddit_gallery(media_url.split("/")[-1], reddit_instance)
-        return await fetch_direct_link(media_url, session)
+        return await handle_direct_link(media_url, session)
     except Exception as e:
         logger.error(f"Error resolving media URL: {e}", exc_info=True)
         return None
