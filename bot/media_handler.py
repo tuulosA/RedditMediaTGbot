@@ -167,8 +167,6 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
         logger.warning(f"Unsupported media type: {file_path}")
         return False
 
-    bot = update.get_bot()
-
     # Handle video files with explicit dimensions to avoid stretched videos on mobile
     if file_path.lower().endswith((".mp4", ".webm")):
         cap = cv2.VideoCapture(file_path)
@@ -179,7 +177,6 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
             logger.error(f"Invalid video dimensions for file: {file_path}")
             return False
 
-        # Use explicit dimensions for videos
         for attempt in range(RetryConfig.RETRY_ATTEMPTS):
             try:
                 await send_video(file_path, update, caption=caption)
@@ -203,3 +200,4 @@ async def send_to_telegram(file_path: str, update: Update, caption: Optional[str
             logger.error(f"Error sending file: {e}", exc_info=True)
 
     logger.error(f"Failed to send media after {RetryConfig.RETRY_ATTEMPTS} attempts: {file_path}")
+    return False

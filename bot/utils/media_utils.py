@@ -14,25 +14,42 @@ logger = logging.getLogger(__name__)
 
 def determine_media_type(file_path: str):
     """
-    Determines the media type based on file extension.
+    Determines the media type based on file extension and returns the appropriate coroutine for sending the media.
     """
     file_extension = os.path.splitext(urlparse(file_path).path)[1].lower()
 
     if file_extension in (".mp4", ".webm"):
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_video(fp, upd, caption), asyncio.get_event_loop()
-        )
+        return send_video
     elif file_extension in (".jpg", ".jpeg", ".png"):
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_photo(fp, upd, caption), asyncio.get_event_loop()
-        )
+        return send_photo
     elif file_extension == ".gif":
-        return lambda fp, upd, caption=None: asyncio.run_coroutine_threadsafe(
-            send_animation(fp, upd, caption), asyncio.get_event_loop()
-        )
+        return send_animation
 
     logger.warning(f"Unsupported media type for file: {file_path}")
     return None
+
+
+async def send_video(file_path, update, caption=None):
+    bot = update.get_bot()
+    with open(file_path, "rb") as video_file:
+        await bot.send_video(
+            chat_id=update.effective_chat.id,
+            video=video_file,
+            supports_streaming=True,
+            caption=caption,
+        )
+
+
+async def send_photo(file_path, update, caption=None):
+    bot = update.get_bot()
+    with open(file_path, "rb") as photo_file:
+        await bot.send_photo(chat_id=update.effective_chat.id, photo=photo_file, caption=caption)
+
+
+async def send_animation(file_path, update, caption=None):
+    bot = update.get_bot()
+    with open(file_path, "rb") as animation_file:
+        await bot.send_animation(chat_id=update.effective_chat.id, animation=animation_file, caption=caption)
 
 
 def cleanup_file(file_path: str) -> None:
@@ -80,25 +97,6 @@ async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
     except Exception as e:
         logger.error(f"Error during GIF to MP4 conversion: {e}", exc_info=True)
     return None
-
-
-async def send_video(file_path, update, caption=None):
-    with open(file_path, "rb") as video_file:
-        await update.message.reply_video(
-            video=video_file,
-            supports_streaming=True,
-            caption=caption
-        )
-
-
-async def send_photo(file_path, update, caption=None):
-    with open(file_path, "rb") as photo_file:
-        await update.message.reply_photo(photo=photo_file, caption=caption)
-
-
-async def send_animation(file_path, update, caption=None):
-    with open(file_path, "rb") as animation_file:
-        await update.message.reply_animation(animation=animation_file, caption=caption)
 
 
 async def validate_file(file_path: str) -> bool:
