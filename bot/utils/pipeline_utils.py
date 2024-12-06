@@ -27,18 +27,6 @@ async def notify_user(update, message):
     await update.message.reply_text(message)
 
 
-def log_summary(posts: List[Submission]):
-    """
-    Log a summary of successfully sent posts.
-    """
-    if posts:
-        logger.info("Pipeline Summary:")
-        for post in posts:
-            logger.info(f"Title: {post.title}, URL: {post.url}")
-    else:
-        logger.info("No posts were processed.")
-
-
 async def validate_subreddits(reddit_instance, subreddit_names):
     """
     Validate subreddit accessibility.
@@ -52,3 +40,15 @@ async def validate_subreddits(reddit_instance, subreddit_names):
         except Exception:
             logger.warning(f"Subreddit {subreddit_name} is invalid or inaccessible.")
     return valid_subreddits
+
+
+def log_summary(posts: List[Submission]):
+    """
+    Log a summary of successfully sent posts.
+    """
+    if posts:
+        logger.info("Pipeline Summary:")
+        for post in posts:
+            logger.info(f"Title: {post.title}, URL: {post.url}")
+    else:
+        logger.info("No posts were processed.")
