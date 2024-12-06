@@ -48,27 +48,6 @@ async def process_v_reddit(media_url: str, session: aiohttp.ClientSession) -> Op
     return await download_v_reddit(valid_url, temp_file_path, session)
 
 
-async def process_imgur(media_url: str) -> Optional[str]:
-    """
-    Resolves direct links for Imgur media, including downloading and converting .gifv files.
-    """
-    try:
-        file_path, _ = await yt_dlp_download(media_url)
-        if not file_path:
-            logger.error(f"Failed to download Imgur media: {media_url}")
-            return None
-
-        if file_path.endswith(".gifv"):
-            mp4_path = file_path.replace(".gifv", ".mp4")
-            if convert_to_mp4(file_path, mp4_path):
-                return mp4_path
-            logger.error(f"Failed to convert .gifv to .mp4: {file_path}")
-        return file_path
-    except Exception as e:
-        logger.error(f"Error processing Imgur media {media_url}: {e}", exc_info=True)
-    return None
-
-
 async def find_valid_dash_url(dash_urls: list[str], session: aiohttp.ClientSession) -> Optional[str]:
     """
     Checks DASH URLs for availability and returns the first valid URL.
@@ -103,6 +82,27 @@ async def download_v_reddit(url: str, file_path: str, session: aiohttp.ClientSes
         logger.error(f"Download timed out for URL: {url}")
     except Exception as e:
         logger.error(f"Error downloading file from {url}: {e}", exc_info=True)
+    return None
+
+
+async def process_imgur(media_url: str) -> Optional[str]:
+    """
+    Resolves direct links for Imgur media, including downloading and converting .gifv files.
+    """
+    try:
+        file_path, _ = await yt_dlp_download(media_url)
+        if not file_path:
+            logger.error(f"Failed to download Imgur media: {media_url}")
+            return None
+
+        if file_path.endswith(".gifv"):
+            mp4_path = file_path.replace(".gifv", ".mp4")
+            if convert_to_mp4(file_path, mp4_path):
+                return mp4_path
+            logger.error(f"Failed to convert .gifv to .mp4: {file_path}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Error processing Imgur media {media_url}: {e}", exc_info=True)
     return None
 
 
