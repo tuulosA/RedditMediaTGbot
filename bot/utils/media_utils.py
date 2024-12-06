@@ -52,22 +52,6 @@ async def send_animation(file_path, update, caption=None):
         await bot.send_animation(chat_id=update.effective_chat.id, animation=animation_file, caption=caption)
 
 
-def cleanup_file(file_path: str) -> None:
-    """
-    Deletes a file and its parent directory if empty.
-    """
-    if not file_path:
-        return
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        parent_dir = os.path.dirname(file_path)
-        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
-            os.rmdir(parent_dir)
-    except Exception as e:
-        logger.error(f"Error cleaning up file: {file_path}, {e}", exc_info=True)
-
-
 async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
     """
     Converts a GIF file to MP4 using FFmpeg.
@@ -143,3 +127,19 @@ async def fetch_top_comment(media_data: Submission) -> Optional[str]:
     except Exception as e:
         logger.warning(f"Failed to fetch comment: {e}")
     return None
+
+
+def cleanup_file(file_path: str) -> None:
+    """
+    Deletes a file and its parent directory if empty.
+    """
+    if not file_path:
+        return
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        parent_dir = os.path.dirname(file_path)
+        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
+            os.rmdir(parent_dir)
+    except Exception as e:
+        logger.error(f"Error cleaning up file: {file_path}, {e}", exc_info=True)
