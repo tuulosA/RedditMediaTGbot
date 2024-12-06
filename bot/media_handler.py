@@ -32,14 +32,17 @@ async def process_media_batch(
     include_comments: bool
 ) -> list[Submission]:
     """
-    Processes and uploads a list of media items.
+    Processes and uploads a list of media items, handling download and upload asynchronously.
     """
     async with aiohttp.ClientSession() as session:
         tasks = [
             process_media(media, reddit_instance, update, session, include_comments) for media in media_list
         ]
-        results = await asyncio.gather(*tasks)
-    return [result for result in results if result]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Filter out successful results
+    successful_media = [result for result in results if isinstance(result, Submission)]
+    return successful_media
 
 
 async def process_media(
@@ -50,13 +53,11 @@ async def process_media(
     include_comments: bool = False,
 ) -> Optional[Submission]:
     """
-    Processes a single media item.
+    Processes a single media item, downloading and uploading it asynchronously.
     """
     if not media_data.url:
         logger.warning("Media URL is missing or invalid.")
         return None
-
-    file_path = None
 
     try:
         top_comment = await fetch_top_comment(media_data) if include_comments else None
@@ -64,14 +65,39 @@ async def process_media(
         if not resolved_url:
             return None
 
-        file_path = await validate_media_download(resolved_url, session)
-        if file_path and await send_to_telegram(file_path, update, caption=top_comment):
-            return media_data
+        # Start download and upload asynchronously
+        download_task = validate_media_download(resolved_url, session)
+        upload_task = asyncio.create_task(wait_and_upload(download_task, update, top_comment))
+
+        # Wait for upload to complete
+        await upload_task
+
+        return media_data if upload_task.result() else None
     except Exception as e:
         logger.error(f"Error processing media {media_data.url}: {e}", exc_info=True)
-    finally:
+        return None
+
+
+async def wait_and_upload(
+    download_task: asyncio.Task,
+    update: Update,
+    caption: Optional[str]
+) -> bool:
+    """
+    Waits for the download task to complete and uploads the file to Telegram.
+    """
+    try:
+        file_path = await download_task
+        if not file_path:
+            logger.error("Download failed; skipping upload.")
+            return False
+
+        success = await send_to_telegram(file_path, update, caption=caption)
         cleanup_file(file_path)
-    return None
+        return success
+    except Exception as e:
+        logger.error(f"Error during download or upload: {e}", exc_info=True)
+        return False
 
 
 async def validate_media_download(resolved_url: str, session: aiohttp.ClientSession) -> Optional[str]:
@@ -82,10 +108,12 @@ async def validate_media_download(resolved_url: str, session: aiohttp.ClientSess
         file_path = await download_media(resolved_url, session)
         if file_path and is_file_size_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
             return file_path
+
         cleanup_file(file_path)
+        return None
     except Exception as e:
         logger.error(f"Error validating media download: {e}", exc_info=True)
-    return None
+        return None
 
 
 async def resolve_media_url(media_url: str, reddit_instance: Reddit, session: aiohttp.ClientSession) -> Optional[str]:

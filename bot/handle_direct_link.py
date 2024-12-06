@@ -3,11 +3,11 @@ import os
 import aiohttp
 import logging
 import asyncio
-import subprocess
 from typing import Optional, Tuple
 from bot.utils.tempfile_utils import create_temp_dir
 from bot.utils.blacklist_manager import add_to_blacklist
 from bot.config import TimeoutConfig
+from bot.utils.media_utils import cleanup_file
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +16,11 @@ async def handle_direct_link(media_url: str, session: aiohttp.ClientSession) -> 
     """
     Resolves a direct media link from a given URL.
     """
-
     try:
         if "v.redd.it" in media_url:
             return await process_v_reddit(media_url, session)
         if "imgur.com" in media_url:
-            return await process_imgur(media_url)
+            return await process_imgur(media_url, session)
         if media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.mp4')):
             return media_url
 
@@ -45,7 +44,10 @@ async def process_v_reddit(media_url: str, session: aiohttp.ClientSession) -> Op
 
     temp_dir = create_temp_dir("reddit_video_")
     temp_file_path = os.path.join(temp_dir, "video.mp4")
-    return await download_v_reddit(valid_url, temp_file_path, session)
+
+    download_task = asyncio.create_task(download_v_reddit(valid_url, temp_file_path, session))
+    await download_task
+    return download_task.result()
 
 
 async def find_valid_dash_url(dash_urls: list[str], session: aiohttp.ClientSession) -> Optional[str]:
@@ -85,7 +87,7 @@ async def download_v_reddit(url: str, file_path: str, session: aiohttp.ClientSes
     return None
 
 
-async def process_imgur(media_url: str) -> Optional[str]:
+async def process_imgur(media_url: str, session: aiohttp.ClientSession) -> Optional[str]:
     """
     Resolves direct links for Imgur media, including downloading and converting .gifv files.
     """
@@ -97,33 +99,46 @@ async def process_imgur(media_url: str) -> Optional[str]:
 
         if file_path.endswith(".gifv"):
             mp4_path = file_path.replace(".gifv", ".mp4")
-            if convert_gifv_to_mp4(file_path, mp4_path):
-                return mp4_path
-            logger.error(f"Failed to convert .gifv to .mp4: {file_path}")
+            convert_task = asyncio.create_task(convert_gifv_to_mp4(file_path, mp4_path))
+            await convert_task
+            return convert_task.result()
+
         return file_path
     except Exception as e:
         logger.error(f"Error processing Imgur media {media_url}: {e}", exc_info=True)
     return None
 
 
-def convert_gifv_to_mp4(input_file: str, output_file: str) -> bool:
+async def convert_gifv_to_mp4(input_file: str, output_file: str) -> Optional[str]:
     """
-    Converts .gifv files to .mp4 using FFmpeg.
+    Converts a .gifv file to .mp4 asynchronously using FFmpeg.
     """
     command = [
         "ffmpeg", "-y",
         "-i", input_file,
         "-movflags", "faststart",
         "-pix_fmt", "yuv420p",
-        output_file
+        output_file,
     ]
+
     try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        logger.info(f"Converted {input_file} to MP4: {output_file}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"FFmpeg conversion failed: {e}", exc_info=True)
-    return False
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        _, stderr = await process.communicate()
+
+        if process.returncode == 0:
+            logger.info(f"Successfully converted {input_file} to {output_file}")
+            cleanup_file(input_file)
+            return output_file
+        else:
+            logger.error(f"FFmpeg conversion failed: {stderr.decode()}")
+    except Exception as e:
+        logger.error(f"Error during GIF to MP4 conversion: {e}", exc_info=True)
+
+    return None
 
 
 async def yt_dlp_download(media_url: str) -> Tuple[Optional[str], Optional[str]]:
