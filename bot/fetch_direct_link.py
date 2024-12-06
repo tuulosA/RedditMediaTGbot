@@ -97,7 +97,7 @@ async def process_imgur(media_url: str) -> Optional[str]:
 
         if file_path.endswith(".gifv"):
             mp4_path = file_path.replace(".gifv", ".mp4")
-            if convert_to_mp4(file_path, mp4_path):
+            if convert_gifv_to_mp4(file_path, mp4_path):
                 return mp4_path
             logger.error(f"Failed to convert .gifv to .mp4: {file_path}")
         return file_path
@@ -106,7 +106,7 @@ async def process_imgur(media_url: str) -> Optional[str]:
     return None
 
 
-def convert_to_mp4(input_file: str, output_file: str) -> bool:
+def convert_gifv_to_mp4(input_file: str, output_file: str) -> bool:
     """
     Converts .gifv files to .mp4 using FFmpeg.
     """
