@@ -4,16 +4,21 @@ from typing import List, Optional, Set
 from asyncpraw.models import Subreddit, Submission
 from bot import get_reddit_client
 from bot.config import MediaConfig
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 
-def filter_duplicates(posts: List[Submission], processed_post_ids: Set[str]) -> List[Submission]:
+async def filter_duplicates(posts: List[Submission], processed_post_ids: Set[str]) -> List[Submission]:
     """
-    Filter out duplicate posts based on their IDs.
+    Asynchronously filter out duplicate posts based on their IDs.
     """
-    unique_posts = [post for post in posts if post.id not in processed_post_ids]
-    processed_post_ids.update(post.id for post in unique_posts)
+    def _filter():
+        unique_posts = [post for post in posts if post.id not in processed_post_ids]
+        processed_post_ids.update(post.id for post in unique_posts)
+        return unique_posts
+
+    unique_posts = await asyncio.to_thread(_filter)
     logger.debug(f"Filtered {len(posts) - len(unique_posts)} duplicate posts.")
     return unique_posts
 

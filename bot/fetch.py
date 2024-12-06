@@ -41,6 +41,9 @@ async def fetch_posts_to_list(
 
     logger.info(f"Starting fetch for {subreddit_names}, media count: {media_count}, sort: {sort}")
 
+    if invalid_subreddits:
+        logger.warning(f"Skipping invalid subreddits: {', '.join(invalid_subreddits)}")
+
     # Shuffle subreddits to ensure fair distribution
     random.shuffle(subreddit_names)
 
@@ -63,11 +66,19 @@ async def fetch_posts_to_list(
     # Process tasks as they complete
     try:
         results = await asyncio.gather(*fetch_tasks, return_exceptions=True)
-        media_posts = [post for result in results if isinstance(result, list) for post in result]
+        media_posts = []
+        for i, result in enumerate(results):
+            if isinstance(result, BaseException):  # Handle BaseException explicitly
+                logger.error(f"Error in fetch task for subreddit '{subreddit_names[i]}': {result}", exc_info=True)
+            elif isinstance(result, list):  # Process valid results
+                media_posts.extend(result)
+            else:
+                logger.warning(f"Unexpected result type from fetch task for '{subreddit_names[i]}': {type(result)}")
 
         # Filter out processed URLs
         filtered_posts = [post for post in media_posts if post.url not in processed_urls]
         logger.info(f"Filtered out {len(media_posts) - len(filtered_posts)} already processed posts.")
+        logger.info(f"Total unique posts fetched: {len(processed_post_ids)}")
 
         return filtered_posts[:media_count]  # Return up to the requested count
     except asyncio.TimeoutError:
@@ -101,7 +112,7 @@ async def fetch_from_subreddit(
             return []
 
         filtered_posts = await filter_media_posts(posts, subreddit_name, media_type, target_count)
-        unique_posts = filter_duplicates(filtered_posts, processed_post_ids)
+        unique_posts = await filter_duplicates(filtered_posts, processed_post_ids)
         return unique_posts
 
 
