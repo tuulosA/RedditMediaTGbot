@@ -8,6 +8,16 @@ from bot.config import MediaConfig
 logger = logging.getLogger(__name__)
 
 
+def filter_duplicates(posts: List[Submission], processed_post_ids: Set[str]) -> List[Submission]:
+    """
+    Filter out duplicate posts based on their IDs.
+    """
+    unique_posts = [post for post in posts if post.id not in processed_post_ids]
+    processed_post_ids.update(post.id for post in unique_posts)
+    logger.debug(f"Filtered {len(posts) - len(unique_posts)} duplicate posts.")
+    return unique_posts
+
+
 async def fetch_and_validate_subreddit(subreddit_name: str, update) -> Optional[Subreddit]:
     """
     Fetch and validate a subreddit. Returns the subreddit object if successful, or None on failure.
@@ -23,16 +33,6 @@ async def fetch_and_validate_subreddit(subreddit_name: str, update) -> Optional[
         return subreddit
     except Exception as e:
         return await _handle_subreddit_error(e, subreddit_name, update)
-
-
-def filter_duplicates(posts: List[Submission], processed_post_ids: Set[str]) -> List[Submission]:
-    """
-    Filter out duplicate posts based on their IDs.
-    """
-    unique_posts = [post for post in posts if post.id not in processed_post_ids]
-    processed_post_ids.update(post.id for post in unique_posts)
-    logger.debug(f"Filtered {len(posts) - len(unique_posts)} duplicate posts.")
-    return unique_posts
 
 
 async def get_sorted_subreddit_posts(
