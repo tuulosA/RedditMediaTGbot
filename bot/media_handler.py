@@ -101,19 +101,17 @@ async def wait_and_upload(
 
 
 async def validate_media_download(resolved_url: str, session: aiohttp.ClientSession) -> Optional[str]:
-    """
-    Downloads and validates a media file from a resolved URL.
-    """
-    try:
-        file_path = await download_media(resolved_url, session)
-        if file_path and await is_file_size_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
-            return file_path
+    file_path = await download_media(resolved_url, session)
+    if not file_path:
+        return None
 
-        cleanup_file(file_path)
-        return None
-    except Exception as e:
-        logger.error(f"Error validating media download: {e}", exc_info=True)
-        return None
+    if await is_file_size_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
+        return file_path
+
+    logger.warning(f"Invalid file size for {file_path}")
+    cleanup_file(file_path)
+    return None
+
 
 
 async def resolve_media_url(media_url: str, reddit_instance: Reddit, session: aiohttp.ClientSession) -> Optional[str]:

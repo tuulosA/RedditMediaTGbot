@@ -49,7 +49,7 @@ class RetryConfig:
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50
-    DEFAULT_SEMAPHORE_LIMIT = 3
+    DEFAULT_SEMAPHORE_LIMIT = 10
     MAX_MEDIA_COUNT = 5
     POST_LIMIT = 50
 
