@@ -8,6 +8,7 @@ from telegram import Update
 from telegram.error import TimedOut
 from asyncpraw import Reddit
 from asyncpraw.models import Submission
+import urllib.parse
 from bot.utils.media_utils import (
     convert_gif_to_mp4,
     validate_file,
@@ -141,7 +142,9 @@ async def download_media(resolved_url: str, session: aiohttp.ClientSession) -> O
         return None
 
     temp_dir = create_temp_dir("reddit_media_")
-    file_path = os.path.join(temp_dir, os.path.basename(resolved_url))
+    # Remove query parameters from URL
+    cleaned_url = urllib.parse.urlparse(resolved_url).path
+    file_path = os.path.join(temp_dir, os.path.basename(cleaned_url))
 
     try:
         async with session.get(resolved_url, timeout=aiohttp.ClientTimeout(total=TimeoutConfig.DOWNLOAD_TIMEOUT)) as resp:
