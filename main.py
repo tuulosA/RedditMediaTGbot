@@ -20,7 +20,6 @@ def main():
 
     application = Application.builder().token(telegram_api_key).build()
 
-    from redditcommand.utils.telegram_utils import register_command_handlers, register_jobs
     register_command_handlers(application)
     register_jobs(application, int(telegram_chat_id))
 
