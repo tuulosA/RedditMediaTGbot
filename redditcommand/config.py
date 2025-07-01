@@ -1,11 +1,11 @@
-#config.py
+# config.py
+
 import os
 import asyncpraw
+
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
-
 
 class RedditConfig:
     @staticmethod
@@ -38,27 +38,47 @@ class RedditConfig:
         )
 
 
+class RedditClientManager:
+    _client = None
+
+    @classmethod
+    async def get_client(cls):
+        """
+        Returns a shared instance of the Reddit client, initializing it if necessary.
+        """
+        if cls._client is None:
+            cls._client = await RedditConfig.initialize_reddit()
+        return cls._client
+
+
 class TimeoutConfig:
     DOWNLOAD_TIMEOUT = 300
 
 
 class RetryConfig:
-    RETRY_ATTEMPTS = 3
-    MAX_RETRIES = 2
+    RETRY_ATTEMPTS = 5
 
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50
-    DEFAULT_SEMAPHORE_LIMIT = 10
+    DEFAULT_SEMAPHORE_LIMIT = 5
     MAX_MEDIA_COUNT = 5
-    POST_LIMIT = 50
+    POST_LIMIT = 100
 
 
 class Messages:
-    USAGE_MESSAGE = "Usage: /r [all/year/month/week] [subreddit(s)] [term(s)] [count] [image/video]"
-    INVALID_FORMAT_MESSAGE = "Invalid command format. Example: /r [time_filter] [subreddits] [search_terms] [media_type] [media_count]"
-    MAX_COUNT_EXCEEDED_MESSAGE = f"Maximum of {MediaConfig.MAX_MEDIA_COUNT} media files can be fetched at a time."
-
-
-class Paths:
-    BLACKLIST_FILE = os.path.join(os.getcwd(), "dead_links.json")
+    USAGE_MESSAGE = (
+        "Usage: /r [all/year/month/week/day] [subreddit(s)] [term(s)] [count] [image/video] "
+        "[-c] [-f] [-t] [-a]\n\n"
+        "Flags:\n"
+        "  -c  Include top comment\n"
+        "  -f  Include flair\n"
+        "  -t  Include title\n"
+        "  -a  Include all (title, flair, comment)"
+    )
+    INVALID_FORMAT_MESSAGE = (
+        "Invalid command format.\nExample: /r week cats funny 3 video -a"
+    )
+    MAX_COUNT_EXCEEDED_MESSAGE = (
+        f"Maximum of {MediaConfig.MAX_MEDIA_COUNT} media files can be fetched at a time."
+    )
