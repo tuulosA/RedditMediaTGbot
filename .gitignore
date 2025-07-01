@@ -2,3 +2,5 @@ __pycache__/
 .vs/
 .idea/
 .env
+print.py
+print.txt

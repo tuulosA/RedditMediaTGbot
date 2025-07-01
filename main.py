@@ -14,7 +14,6 @@ from redditcommand.commands import (
     follow_user_command,
     unfollow_user_command,
     set_filter_command,
-    set_filter_command,
     clear_filter_command,
     list_followed_users_command
 )
