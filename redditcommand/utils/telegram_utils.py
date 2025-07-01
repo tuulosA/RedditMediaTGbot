@@ -3,7 +3,7 @@
 from datetime import time, timezone, timedelta
 from telegram.ext import Application, CommandHandler
 
-from redditcommand.commands import (
+from ..commands import (
     reddit_media_command,
     follow_user_command,
     unfollow_user_command,
@@ -12,7 +12,7 @@ from redditcommand.commands import (
     list_followed_users_command
 )
 
-from redditcommand.automatic_posts.top_post import (
+from ..automatic_posts import (
     send_daily_top_post_job,
     send_daily_top_post_command,
     send_weekly_top_post_job,
@@ -21,10 +21,9 @@ from redditcommand.automatic_posts.top_post import (
     send_monthly_top_post_command,
     send_yearly_top_post_job,
     send_yearly_top_post_command,
-    send_all_time_top_post_command
+    send_all_time_top_post_command,
+    check_and_send_new_user_posts
 )
-
-from redditcommand.follow_user import check_and_send_new_user_posts
 
 helsinki_time = timezone(timedelta(hours=3))
 

@@ -5,7 +5,6 @@ from telegram.ext import Application
 from redditcommand.utils.logger import setup_logging
 from redditcommand.utils.telegram_utils import register_command_handlers, register_jobs
 
-
 def main():
     load_dotenv()
     logger = setup_logging()
@@ -25,7 +24,6 @@ def main():
 
     logger.info("Bot is now polling...")
     application.run_polling()
-
 
 if __name__ == "__main__":
     try:

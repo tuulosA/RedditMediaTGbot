@@ -3,18 +3,13 @@
 import asyncio
 import random
 import logging
-
 from typing import Optional, List, Set
 from asyncpraw.models import Submission
 
-from redditcommand.config import RedditClientManager, MediaConfig
-from redditcommand.utils.fetch_utils import (
-    RedditPostFetcher,
-    SubredditFetcher,
-    RandomSearch,
-)
+from .config import RedditClientManager, MediaConfig
+from .filter_posts import filter_media_posts
 
-from redditcommand.filter_posts import filter_media_posts
+from redditcommand.utils.fetch_utils import RedditPostFetcher, SubredditFetcher, RandomSearch
 
 logger = logging.getLogger(__name__)
 

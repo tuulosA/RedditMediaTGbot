@@ -3,18 +3,18 @@
 import logging
 from telegram import Update
 from telegram.ext import CallbackContext
-
-from redditcommand.config import Messages
-from redditcommand.utils.command_utils import CommandParser
-from redditcommand.pipeline import pipeline
-from redditcommand.utils.file_state_utils import FollowedUserStore
 from asyncprawcore.exceptions import NotFound, Forbidden
-from redditcommand.config import RedditClientManager
+
+from .config import Messages, RedditClientManager
+
+from redditcommand.utils.command_utils import CommandParser
+from redditcommand.utils.file_state_utils import FollowedUserStore
 
 logger = logging.getLogger(__name__)
 
 
 async def reddit_media_command(update: Update, context: CallbackContext) -> None:
+    from .pipeline import pipeline
     logger.info(f"Received /r command from {update.message.from_user.username}")
 
     if not context.args:

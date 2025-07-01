@@ -10,12 +10,12 @@ from telegram.error import TimedOut
 from asyncpraw import Reddit
 from asyncpraw.models import Submission
 
-from redditcommand.config import MediaConfig, RetryConfig
+from .config import MediaConfig, RetryConfig
+from .handle_direct_link import handle_direct_link
+
 from redditcommand.utils.media_utils import MediaSender, MediaUtils, MediaDownloader
 from redditcommand.utils.compressor import Compressor
 from redditcommand.utils.tempfile_utils import TempFileManager
-
-from redditcommand.handle_direct_link import handle_direct_link
 
 logger = logging.getLogger(__name__)
 

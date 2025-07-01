@@ -7,8 +7,8 @@ import logging
 from redditcommand.config import RedditClientManager, MediaConfig, RetryConfig
 from redditcommand.utils.pipeline_utils import PipelineHelper
 
-from redditcommand.fetch import fetch_posts_to_list
-from redditcommand.media_handler import process_media_batch
+from .fetch import fetch_posts_to_list
+from .media_handler import process_media_batch
 
 logger = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ from redgifs.aio import API as RedGifsAPI
 from asyncpraw.models import Submission
 
 from redditcommand.utils.tempfile_utils import TempFileManager
-from redditcommand.utils.media_utils import MediaUtils, MediaDownloader
+from redditcommand.utils.media_utils import MediaDownloader
 from redditcommand.utils.reddit_video_resolver import RedditVideoResolver
 
 logger = logging.getLogger(__name__)

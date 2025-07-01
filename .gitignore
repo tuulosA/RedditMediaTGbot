@@ -4,3 +4,5 @@ __pycache__/
 .env
 print.py
 print.txt
+follower_map.json
+logs/*.log

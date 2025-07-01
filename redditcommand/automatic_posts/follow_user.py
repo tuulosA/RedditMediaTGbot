@@ -1,19 +1,22 @@
 # follow_user.py
 
 import logging
-import aiohttp
 import time
 import os
 from urllib.parse import urlparse
 
+import aiohttp
+
 from redditcommand.config import RedditClientManager
+from redditcommand.handle_direct_link import handle_direct_link
+
 from redditcommand.utils.filter_utils import FilterUtils
 from redditcommand.utils.media_utils import MediaUtils, MediaDownloader, MediaSender
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.file_state_utils import FollowedUserStore
-from redditcommand.handle_direct_link import handle_direct_link
 
 logger = logging.getLogger(__name__)
+
 
 async def check_and_send_new_user_posts(target):
     reddit = await RedditClientManager.get_client()
