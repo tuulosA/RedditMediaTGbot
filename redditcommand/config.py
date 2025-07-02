@@ -77,7 +77,7 @@ class Messages:
         "  -a  Include all (title, flair, comment)"
     )
     INVALID_FORMAT_MESSAGE = (
-        "Invalid command format.\nExample: /r week cats funny 3 video -a"
+        "Invalid command format.\nExample: /r week cats orange 3 video -a"
     )
     MAX_COUNT_EXCEEDED_MESSAGE = (
         f"Maximum of {MediaConfig.MAX_MEDIA_COUNT} media files can be fetched at a time."
