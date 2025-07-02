@@ -1,4 +1,4 @@
-# Refactored media_utils.py for better structure, clarity, and separation of concerns
+# redditcommand/utils/media_utils.py
 
 import os
 import logging

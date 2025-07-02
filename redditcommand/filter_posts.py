@@ -1,4 +1,4 @@
-# Updated filter_posts.py to use refactored FilterUtils class
+# Updated filter_posts.py
 
 import logging
 from random import sample

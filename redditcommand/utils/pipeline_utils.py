@@ -1,4 +1,4 @@
-# Refactored pipeline_utils.py using PipelineHelper class for better structure
+# redditcommand/utils/pipeline_utils.py
 
 import logging
 import asyncio

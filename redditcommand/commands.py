@@ -1,4 +1,4 @@
-# Updated commands.py to use extended CommandParser with title/flair flags
+# Updated commands.py
 
 import logging
 from telegram import Update

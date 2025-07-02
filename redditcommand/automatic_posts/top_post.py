@@ -1,4 +1,4 @@
-# top_post.py
+# redditcommand/automatic_posts/top_post.py
 
 import os
 import logging

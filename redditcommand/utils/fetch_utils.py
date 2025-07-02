@@ -1,4 +1,4 @@
-# Refactored fetch_utils.py for clarity, separation of concerns, and class encapsulation
+# redditcommand/utils/fetch_utils.py
 
 import logging
 import asyncio

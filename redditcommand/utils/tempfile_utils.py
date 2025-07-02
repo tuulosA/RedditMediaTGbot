@@ -1,4 +1,4 @@
-# tempfile_utils.py
+# redditcommand/utils/tempfile_utils.py
 
 import tempfile
 import os

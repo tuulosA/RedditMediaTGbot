@@ -1,4 +1,4 @@
-# filter_utils.py
+# redditcommand/utils/filter_utils.py
 
 import logging
 

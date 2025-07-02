@@ -1,4 +1,4 @@
-# logger.py
+# redditcommand/utils/logger.py
 
 import logging
 

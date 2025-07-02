@@ -1,4 +1,4 @@
-# Refactored compressor.py using Compressor class and MediaUtils for cleanup
+# redditcommand/utils/compressor.py
 
 import os
 import logging

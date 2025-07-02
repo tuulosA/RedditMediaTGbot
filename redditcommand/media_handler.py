@@ -1,4 +1,4 @@
-# Updated media_handler.py to use Compressor class for size validation
+# media_handler.py
 
 import asyncio
 import logging

@@ -1,4 +1,4 @@
-# Refactored command_utils.py using CommandParser class for modular argument parsing
+# redditcommand/utils/command_utils.py
 
 import logging
 

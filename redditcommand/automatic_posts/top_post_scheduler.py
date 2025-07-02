@@ -1,4 +1,4 @@
-# top_post_scheduler.py
+# redditcommand/automatic_posts/top_post_scheduler.py
 
 import os
 from datetime import datetime, timezone, timedelta
