@@ -1,3 +1,4 @@
+add these in .env
 - TELEGRAM_API_KEY=
 - TELEGRAM_CHAT_ID=
 - REDDIT_CLIENT_ID=
