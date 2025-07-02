@@ -5,6 +5,7 @@ __pycache__/
 print.py
 print.txt
 logs/*.log
+auto_posts/*
 followed_users.json
 seen_user_posts.json
 follower_map.json

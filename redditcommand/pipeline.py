@@ -1,4 +1,4 @@
-# pipeline.py
+# redditcommand/pipeline.py
 
 import random
 import asyncio

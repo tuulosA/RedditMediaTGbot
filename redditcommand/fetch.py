@@ -1,4 +1,4 @@
-# fetch.py
+# redditcommand/fetch.py
 
 import asyncio
 import random
@@ -8,8 +8,7 @@ from asyncpraw.models import Submission
 
 from .config import RedditClientManager, MediaConfig
 from .filter_posts import MediaPostFilter
-
-from redditcommand.utils.fetch_utils import RedditPostFetcher, SubredditFetcher, RandomSearch
+from redditcommand.utils.fetch_utils import RedditPostFetcher, FetchOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +47,15 @@ class MediaPostFetcher:
 
         fetch_tasks = [
             self.fetch_from_single_subreddit(
-                s,
-                search_terms,
-                sort,
-                time_filter,
-                media_type,
-                max(1, media_count // len(valid_subreddits)),
-                processed_post_ids,
-                update,
-                processed_urls,
+                subreddit_name=s,
+                search_terms=search_terms,
+                sort=sort,
+                time_filter=time_filter,
+                media_type=media_type,
+                target_count=max(1, media_count // len(valid_subreddits)),
+                processed_post_ids=processed_post_ids,
+                update=update,
+                processed_urls=processed_urls,
             )
             for s in valid_subreddits
         ]
@@ -88,39 +87,28 @@ class MediaPostFetcher:
     ) -> List[Submission]:
         async with self.semaphore:
             try:
-                posts = []
-                subreddit = None
-
-                if subreddit_name.lower() == "random":
-                    posts, subreddit = await RandomSearch.run(self.reddit, search_terms, sort, time_filter, update)
-                else:
-                    subreddit = await SubredditFetcher.fetch_and_validate(subreddit_name, update)
-
-                if not subreddit and not posts:
-                    logger.warning(f"Skipping invalid subreddit: {subreddit_name}")
-                    return []
-
-                if subreddit and not posts:
-                    query = " ".join(search_terms) if search_terms else None
-                    posts = (
-                        await RedditPostFetcher.search(subreddit, query, sort, time_filter)
-                        if query else await RedditPostFetcher.fetch_sorted(subreddit, sort, time_filter)
-                    )
+                posts, display_name = await FetchOrchestrator.get_posts(
+                    reddit=self.reddit,
+                    subreddit_name=subreddit_name,
+                    search_terms=search_terms,
+                    sort=sort,
+                    time_filter=time_filter,
+                    update=update
+                )
 
                 if not posts:
-                    logger.info(f"No results from r/{subreddit.display_name if subreddit else 'all'}")
+                    logger.info(f"No results from r/{display_name or subreddit_name}")
                     return []
 
                 filterer = MediaPostFilter(
-                    subreddit_name=subreddit.display_name,
+                    subreddit_name=display_name or subreddit_name,
                     media_type=media_type,
                     media_count=target_count,
                     processed_urls=processed_urls,
                 )
                 filtered = await filterer.filter(posts)
-
                 unique = await RedditPostFetcher.filter_duplicates(filtered, processed_post_ids)
-                logger.info(f"r/{subreddit.display_name}: {len(unique)} unique posts")
+                logger.info(f"r/{display_name}: {len(unique)} unique posts")
                 return unique
 
             except Exception as e:

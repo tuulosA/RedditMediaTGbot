@@ -1,4 +1,4 @@
-# media_handler.py
+# redditcommand/media_handler.py
 
 import asyncio
 import logging
@@ -15,7 +15,7 @@ from asyncpraw.models import Submission
 from .config import MediaConfig, RetryConfig
 from .handle_direct_link import MediaLinkResolver
 
-from redditcommand.utils.media_utils import MediaSender, MediaUtils, MediaDownloader
+from redditcommand.utils.media_utils import MediaSender, MediaUtils, MediaDownloader, CaptionBuilder
 from redditcommand.utils.compressor import Compressor
 from redditcommand.utils.tempfile_utils import TempFileManager
 
@@ -36,13 +36,7 @@ class MediaProcessor:
         if self.session:
             await self.session.close()
 
-    async def process_batch(
-        self,
-        media_list: list[Submission],
-        include_comments: bool,
-        include_flair: bool,
-        include_title: bool
-    ) -> list[Submission]:
+    async def process_batch(self, media_list, include_comments, include_flair, include_title):
         tasks = [
             self.process_single(media, include_comments, include_flair, include_title)
             for media in media_list
@@ -50,20 +44,13 @@ class MediaProcessor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return [result for result in results if isinstance(result, Submission)]
 
-    async def process_single(
-        self,
-        media: Submission,
-        include_comments: bool = False,
-        include_flair: bool = False,
-        include_title: bool = False,
-    ) -> Optional[Submission]:
+    async def process_single(self, media, include_comments=False, include_flair=False, include_title=False):
         if not media.url:
             logger.warning("Media URL is missing or invalid.")
             return None
 
         try:
-            caption = await self.build_caption(media, include_comments, include_flair, include_title)
-
+            caption = await CaptionBuilder.build(media, include_comments, include_flair, include_title)
             resolved_url = await self.resolve_media_url(media)
             if not resolved_url:
                 return None
@@ -77,31 +64,7 @@ class MediaProcessor:
 
         except Exception as e:
             logger.error(f"Error processing media {media.url}: {e}", exc_info=True)
-
         return None
-
-    async def build_caption(
-        self,
-        media: Submission,
-        include_comments: bool,
-        include_flair: bool,
-        include_title: bool
-    ) -> Optional[str]:
-        parts = []
-        if include_title and media.title:
-            parts.append(media.title.strip())
-        if include_flair and media.link_flair_text:
-            parts.append(f"[{media.link_flair_text.strip()}]")
-        if include_comments:
-            top_comment = await MediaUtils.fetch_top_comment(media)
-            if top_comment:
-                parts.append(f"💬 {top_comment.strip()}")
-
-        caption = "\n".join(parts)
-        if len(caption) > 1024:
-            logger.warning(f"Caption too long ({len(caption)}), truncating.")
-            caption = caption[:1021] + "…"
-        return caption or None
 
     async def resolve_media_url(self, post: Submission) -> Optional[str]:
         try:
@@ -110,19 +73,14 @@ class MediaProcessor:
                 return media_url
             if "gallery" in media_url:
                 return await MediaUtils.resolve_reddit_gallery(media_url.split("/")[-1], self.reddit)
-            
+
             resolver = MediaLinkResolver(self.session)
             return await resolver.resolve(media_url, post=post)
-
         except Exception as e:
             logger.error(f"Error resolving media URL for post {post.id}: {e}", exc_info=True)
             return None
 
-    async def download_and_validate_media(
-        self,
-        resolved_url: str,
-        post_id: Optional[str] = None
-    ) -> Optional[str]:
+    async def download_and_validate_media(self, resolved_url: str, post_id: Optional[str] = None) -> Optional[str]:
         file_path = await self.download_file(resolved_url, post_id)
         if not file_path:
             return None
@@ -136,9 +94,7 @@ class MediaProcessor:
 
     async def download_file(self, resolved_url: str, post_id: Optional[str]) -> Optional[str]:
         if os.path.isfile(resolved_url):
-            if await MediaUtils.validate_file(resolved_url):
-                return resolved_url
-            return None
+            return resolved_url if await MediaUtils.validate_file(resolved_url) else None
 
         if not resolved_url.startswith(("http://", "https://")):
             return resolved_url if await MediaUtils.validate_file(resolved_url) else None

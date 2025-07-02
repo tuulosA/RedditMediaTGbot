@@ -1,4 +1,4 @@
-# handle_direct_link.py
+# redditcommand/handle_direct_link.py
 
 import os
 import aiohttp

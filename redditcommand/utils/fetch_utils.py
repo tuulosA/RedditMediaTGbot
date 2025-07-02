@@ -4,7 +4,7 @@ import logging
 import asyncio
 import random
 
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 from asyncpraw.models import Subreddit, Submission
 
 from redditcommand.config import RedditClientManager, MediaConfig
@@ -132,3 +132,23 @@ class RandomSearch:
             logger.error(f"Random search failure: {e}", exc_info=True)
             await update.message.reply_text("Random subreddit fetch failed.")
             return [], None
+
+
+class FetchOrchestrator:
+    @staticmethod
+    async def get_posts(reddit, subreddit_name: str, search_terms, sort, time_filter, update) -> Tuple[List[Submission], Optional[str]]:
+        if subreddit_name.lower() == "random":
+            posts, subreddit = await RandomSearch.run(reddit, search_terms, sort, time_filter, update)
+        else:
+            subreddit = await SubredditFetcher.fetch_and_validate(subreddit_name, update)
+            posts = []
+
+        if subreddit and not posts:
+            query = " ".join(search_terms) if search_terms else None
+            posts = (
+                await RedditPostFetcher.search(subreddit, query, sort, time_filter)
+                if query else await RedditPostFetcher.fetch_sorted(subreddit, sort, time_filter)
+            )
+
+        display_name = getattr(subreddit, "display_name", None)
+        return posts, display_name

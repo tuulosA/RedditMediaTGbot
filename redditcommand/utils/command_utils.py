@@ -7,6 +7,7 @@ from telegram.ext import CallbackContext
 from typing import List, Tuple, Optional
 
 from redditcommand.config import Messages, MediaConfig
+from redditcommand.utils.file_state_utils import FollowedUserStore
 
 logger = logging.getLogger(__name__)
 
@@ -86,3 +87,33 @@ class CommandParser:
                 search_terms.append(lowered)
 
         return media_count, media_type, search_terms, include_comments, include_flair, include_title
+
+
+class CommandUtils:
+    @staticmethod
+    def get_username(update: Update) -> Optional[str]:
+        return update.message.from_user.username
+
+    @staticmethod
+    async def require_username(update: Update) -> Optional[str]:
+        username = CommandUtils.get_username(update)
+        if not username:
+            await update.message.reply_text("You need a Telegram @username to use this feature.")
+        return username
+
+    @staticmethod
+    def sanitize_reddit_username(raw: str) -> str:
+        return raw.lstrip("u/").strip().lower()
+
+    @staticmethod
+    def get_followed_users(tg_user: str) -> List[str]:
+        followed_map = FollowedUserStore.load_user_follower_map()
+        return [u for u, followers in followed_map.items() if tg_user in followers]
+
+    @staticmethod
+    async def show_user_filters(update: Update, username: str):
+        filters = FollowedUserStore.get_filters(username)
+        if not filters:
+            await update.message.reply_text("You have no active filters.")
+        else:
+            await update.message.reply_text(f"Your active filters: {', '.join(filters)}")

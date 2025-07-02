@@ -1,4 +1,4 @@
-# config.py
+# redditcommand/config.py
 
 import os
 import asyncpraw

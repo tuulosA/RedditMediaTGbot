@@ -1,4 +1,4 @@
-# Updated commands.py
+# redditcommand/commands.py
 
 import logging
 from telegram import Update
@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext
 from asyncprawcore.exceptions import NotFound, Forbidden
 
 from redditcommand.config import Messages, RedditClientManager
-from redditcommand.utils.command_utils import CommandParser
+from redditcommand.utils.command_utils import CommandParser, CommandUtils
 from redditcommand.utils.file_state_utils import FollowedUserStore
 
 logger = logging.getLogger(__name__)
@@ -64,9 +64,8 @@ class RedditCommandHandler:
 
     @staticmethod
     async def clear_filter_command(update: Update, context: CallbackContext) -> None:
-        tg_user = update.message.from_user.username
+        tg_user = await CommandUtils.require_username(update)
         if not tg_user:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
             return
 
         FollowedUserStore.clear_filters(tg_user)
@@ -74,18 +73,13 @@ class RedditCommandHandler:
 
     @staticmethod
     async def set_filter_command(update: Update, context: CallbackContext) -> None:
-        tg_user = update.message.from_user.username
+        tg_user = await CommandUtils.require_username(update)
         if not tg_user:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
             return
 
         input_text = " ".join(context.args).strip()
         if not input_text:
-            current_filters = FollowedUserStore.get_filters(tg_user)
-            if not current_filters:
-                await update.message.reply_text("You have no active filters.")
-            else:
-                await update.message.reply_text(f"Your active filters: {', '.join(current_filters)}")
+            await CommandUtils.show_user_filters(update, tg_user)
             return
 
         terms = [term.strip() for term in input_text.split(",") if term.strip()]
@@ -98,33 +92,29 @@ class RedditCommandHandler:
 
     @staticmethod
     async def list_followed_users_command(update: Update, context: CallbackContext) -> None:
-        tg_user = update.message.from_user.username
+        tg_user = await CommandUtils.require_username(update)
         if not tg_user:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
             return
 
-        followed_map = FollowedUserStore.load_user_follower_map()
-        followed_users = [u for u, followers in followed_map.items() if tg_user in followers]
-
-        if not followed_users:
+        users = CommandUtils.get_followed_users(tg_user)
+        if not users:
             await update.message.reply_text("You're not following any Reddit users.")
         else:
             await update.message.reply_text(
-                "You're currently following:\n" + "\n".join(f"u/{u}" for u in sorted(followed_users))
+                "You're currently following:\n" + "\n".join(f"u/{u}" for u in sorted(users))
             )
 
     @staticmethod
     async def follow_user_command(update: Update, context: CallbackContext) -> None:
-        tg_user = update.message.from_user.username
+        tg_user = await CommandUtils.require_username(update)
         if not tg_user:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
             return
 
         if not context.args or len(context.args) != 1:
             await update.message.reply_text("Usage: /follow <reddit_username>")
             return
 
-        reddit_username = context.args[0].lstrip("u/").strip().lower()
+        reddit_username = CommandUtils.sanitize_reddit_username(context.args[0])
         try:
             reddit = await RedditClientManager.get_client()
             redditor = await reddit.redditor(reddit_username)
@@ -146,16 +136,15 @@ class RedditCommandHandler:
 
     @staticmethod
     async def unfollow_user_command(update: Update, context: CallbackContext) -> None:
-        tg_user = update.message.from_user.username
+        tg_user = await CommandUtils.require_username(update)
         if not tg_user:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
             return
 
         if not context.args or len(context.args) != 1:
             await update.message.reply_text("Usage: /unfollow <reddit_username>")
             return
 
-        reddit_username = context.args[0].lstrip("u/").strip().lower()
+        reddit_username = CommandUtils.sanitize_reddit_username(context.args[0])
         current_map = FollowedUserStore.load_user_follower_map()
         if tg_user not in current_map.get(reddit_username, []):
             await update.message.reply_text(f"You're not following u/{reddit_username}.")

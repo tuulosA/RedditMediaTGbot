@@ -224,3 +224,29 @@ class MediaDownloader:
         except Exception as e:
             logger.error(f"Error downloading from {url}: {e}", exc_info=True)
         return None
+    
+class CaptionBuilder:
+    @staticmethod
+    async def build(
+        media: Submission,
+        include_comments: bool,
+        include_flair: bool,
+        include_title: bool,
+        max_length: int = 1024
+    ) -> Optional[str]:
+        parts = []
+        if include_title and media.title:
+            parts.append(media.title.strip())
+        if include_flair and media.link_flair_text:
+            parts.append(f"[{media.link_flair_text.strip()}]")
+        if include_comments:
+            top_comment = await MediaUtils.fetch_top_comment(media)
+            if top_comment:
+                parts.append(f"💬 {top_comment.strip()}")
+
+        caption = "\n".join(parts)
+        if len(caption) > max_length:
+            logger.warning(f"Caption too long ({len(caption)}), truncating.")
+            caption = caption[:max_length - 3] + "…"
+
+        return caption or None
