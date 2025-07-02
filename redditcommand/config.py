@@ -54,18 +54,18 @@ class TimeoutConfig:
     DOWNLOAD_TIMEOUT = 300
 
 class RetryConfig:
-    RETRY_ATTEMPTS = 5
+    RETRY_ATTEMPTS = 4
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50
-    DEFAULT_SEMAPHORE_LIMIT = 5
+    DEFAULT_SEMAPHORE_LIMIT = 10
     MAX_MEDIA_COUNT = 5
     POST_LIMIT = 100
 
 class PipelineConfig:
     INITIAL_BACKOFF_SECONDS = 1.0
-    MAX_BACKOFF_SECONDS = 30.0
-    BACKOFF_MULTIPLIER = 1.5
+    MAX_BACKOFF_SECONDS = 10
+    BACKOFF_MULTIPLIER = 1.1
     MAX_PROCESSED_URLS = 10_000
 
 class SchedulerConfig:
