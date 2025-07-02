@@ -5,7 +5,7 @@ import logging
 from shutil import copy2
 from datetime import datetime
 from telegram import Update, Bot
-from typing import Union, Optional
+from typing import Union
 from asyncpraw.models import Submission
 
 logger = logging.getLogger(__name__)

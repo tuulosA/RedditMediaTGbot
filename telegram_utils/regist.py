@@ -1,15 +1,16 @@
 # telegram_utils/regist.py
 
-from datetime import time, timezone, timedelta
+from datetime import time
 from telegram.ext import Application, CommandHandler
 
 from redditcommand.commands import RedditCommandHandler
 from redditcommand.automatic_posts.top_post_scheduler import TopPostScheduler
 from redditcommand.automatic_posts.follow_user import FollowUserScheduler
+from redditcommand.config import TelegramConfig, SchedulerConfig
 
 
 class TelegramRegistrar:
-    LOCAL_TIME = timezone(timedelta(hours=3))
+    LOCAL_TIME = TelegramConfig.LOCAL_TIMEZONE
 
     @classmethod
     def register_command_handlers(cls, application: Application) -> None:
@@ -37,33 +38,33 @@ class TelegramRegistrar:
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE DAY", "day"),
-            time=time(20, tzinfo=cls.LOCAL_TIME),
+            time=time(SchedulerConfig.DAILY_POST_HOUR, tzinfo=cls.LOCAL_TIME),
             name="daily_top_post"
         )
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE WEEK", "week"),
-            time=time(21, tzinfo=cls.LOCAL_TIME),
-            days=(0,),
+            time=time(SchedulerConfig.WEEKLY_POST_HOUR, tzinfo=cls.LOCAL_TIME),
+            days=SchedulerConfig.WEEKLY_POST_DAYS,
             name="weekly_top_post"
         )
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE MONTH", "month"),
-            time=time(0, 0, tzinfo=cls.LOCAL_TIME),
+            time=time(SchedulerConfig.MONTHLY_POST_HOUR, 0, tzinfo=cls.LOCAL_TIME),
             name="monthly_top_post"
         )
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE YEAR", "year"),
-            time=time(0, 0, tzinfo=cls.LOCAL_TIME),
+            time=time(SchedulerConfig.YEARLY_POST_HOUR, 0, tzinfo=cls.LOCAL_TIME),
             name="yearly_top_post"
         )
 
         job_queue.run_repeating(
             callback=FollowUserScheduler.run,
-            interval=300,
-            first=10,
+            interval=SchedulerConfig.FOLLOW_CHECK_INTERVAL_SECONDS,
+            first=SchedulerConfig.FOLLOW_CHECK_FIRST_DELAY,
             name="followed_user_post_check",
             chat_id=chat_id
         )

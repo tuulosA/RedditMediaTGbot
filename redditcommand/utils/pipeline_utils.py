@@ -2,16 +2,20 @@
 
 import logging
 import asyncio
+from typing import List, Callable, Awaitable
 
-from typing import List
+from telegram import Update
+from asyncpraw import Reddit
 from asyncpraw.models import Submission
+
+from redditcommand.config import Messages
 
 logger = logging.getLogger(__name__)
 
 
 class PipelineHelper:
     @staticmethod
-    async def initialize_client(client_initializer):
+    async def initialize_client(client_initializer: Callable[[], Awaitable[Reddit]]) -> Reddit:
         try:
             return await asyncio.wait_for(client_initializer(), timeout=30)
         except asyncio.TimeoutError:
@@ -20,12 +24,12 @@ class PipelineHelper:
             raise RuntimeError(f"Failed to initialize Reddit client: {e}")
 
     @staticmethod
-    async def notify_user(update, message: str):
+    async def notify_user(update: Update, message: str) -> None:
         logger.info(f"Notifying user: {message}")
         await update.message.reply_text(message)
 
     @staticmethod
-    async def validate_subreddits(update, reddit_instance, subreddit_names: List[str]) -> List[str]:
+    async def validate_subreddits(update: Update, reddit_instance: Reddit, subreddit_names: List[str]) -> List[str]:
         valid, invalid = [], []
 
         for name in subreddit_names:
@@ -41,7 +45,7 @@ class PipelineHelper:
                 invalid.append(name)
 
         if invalid and not valid:
-            await PipelineHelper.notify_user(update, "No valid or accessible subreddits provided.")
+            await PipelineHelper.notify_user(update, Messages.NO_VALID_SUBREDDITS)
             logger.warning(f"All subreddits invalid: {', '.join(invalid)}")
         else:
             logger.info(f"Valid subreddits: {', '.join(valid)}")
@@ -49,7 +53,7 @@ class PipelineHelper:
         return valid
 
     @staticmethod
-    def log_post_summary(posts: List[Submission]):
+    def log_post_summary(posts: List[Submission]) -> None:
         if posts:
             logger.info("Pipeline Summary:")
             for post in posts:
@@ -58,11 +62,14 @@ class PipelineHelper:
             logger.info("No posts were processed.")
 
     @staticmethod
-    async def notify_completion(update, total_processed: int, media_count: int, posts: List[Submission]):
+    async def notify_completion(update: Update, total_processed: int, media_count: int, posts: List[Submission]) -> None:
         if total_processed == 0:
-            await PipelineHelper.notify_user(update, "No posts found.")
+            await PipelineHelper.notify_user(update, Messages.NO_POSTS_FOUND)
         elif total_processed < media_count:
-            await PipelineHelper.notify_user(update, f"Only {total_processed}/{media_count} posts found.")
+            await PipelineHelper.notify_user(
+                update,
+                Messages.PARTIAL_RESULTS.format(processed=total_processed, requested=media_count)
+            )
 
         PipelineHelper.log_post_summary(posts)
         logger.info("Pipeline completed successfully.")

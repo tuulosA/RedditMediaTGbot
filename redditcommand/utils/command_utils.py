@@ -20,7 +20,7 @@ class CommandParser:
 
         time_filter, args = CommandParser.extract_time_filter(context.args)
         if not args:
-            raise ValueError("Please specify at least one subreddit.")
+            raise ValueError(Messages.NO_SUBREDDITS_PROVIDED)
 
         subreddit_names = CommandParser.parse_subreddits(args[0])
         media_count, media_type, search_terms, include_comments, include_flair, include_title = CommandParser.parse_other_args(args[1:])
@@ -53,7 +53,7 @@ class CommandParser:
             return ["random"]
         subreddits = [sub.strip() for sub in arg.split(",") if sub.strip()]
         if not subreddits:
-            raise ValueError("Invalid subreddit format. Ensure names are comma-separated.")
+            raise ValueError(Messages.INVALID_SUBREDDIT_FORMAT)
         return subreddits
 
     @staticmethod
@@ -98,7 +98,7 @@ class CommandUtils:
     async def require_username(update: Update) -> Optional[str]:
         username = CommandUtils.get_username(update)
         if not username:
-            await update.message.reply_text("You need a Telegram @username to use this feature.")
+            await update.message.reply_text(Messages.TELEGRAM_USERNAME_REQUIRED)
         return username
 
     @staticmethod
@@ -114,6 +114,6 @@ class CommandUtils:
     async def show_user_filters(update: Update, username: str):
         filters = FollowedUserStore.get_filters(username)
         if not filters:
-            await update.message.reply_text("You have no active filters.")
+            await update.message.reply_text(Messages.NO_ACTIVE_FILTERS)
         else:
-            await update.message.reply_text(f"Your active filters: {', '.join(filters)}")
+            await update.message.reply_text(Messages.ACTIVE_FILTERS_TEMPLATE.format(filters=", ".join(filters)))

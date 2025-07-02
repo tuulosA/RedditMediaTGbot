@@ -6,7 +6,7 @@ import logging
 from typing import Optional, List, Set
 from asyncpraw.models import Submission
 
-from .config import RedditClientManager, MediaConfig
+from .config import RedditClientManager, MediaConfig, RedditDefaults
 from .filter_posts import MediaPostFilter
 from redditcommand.utils.fetch_utils import RedditPostFetcher, FetchOrchestrator
 
@@ -26,7 +26,7 @@ class MediaPostFetcher:
         self,
         subreddit_names: List[str],
         search_terms: Optional[List[str]] = None,
-        sort: str = "hot",
+        sort: str = RedditDefaults.DEFAULT_SORT_NO_TIME_FILTER,
         time_filter: Optional[str] = None,
         media_type: Optional[str] = None,
         media_count: int = 1,

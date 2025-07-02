@@ -1,13 +1,12 @@
 # redditcommand/automatic_posts/top_post.py
 
 import logging
-from datetime import timezone, timedelta
 from typing import Optional, Tuple, Union
 
 from telegram import Update, Bot
 from asyncpraw.models import Submission
 
-from redditcommand.config import RedditClientManager
+from redditcommand.config import RedditClientManager, TelegramConfig, TopPostConfig
 from redditcommand.utils.filter_utils import FilterUtils
 from redditcommand.utils.media_utils import MediaUtils
 from redditcommand.automatic_posts.top_post_utils import TopPostUtils
@@ -18,11 +17,11 @@ SubredditTarget = Union[Update, Tuple[Bot, int]]
 
 
 class TopPostManager:
-    def __init__(self, subreddit: str = "kpopfap"):
+    def __init__(self, subreddit: str = TopPostConfig.DEFAULT_SUBREDDIT):
         self.subreddit = subreddit
         self.reddit = None
-        self.timezone = timezone(timedelta(hours=3))
-        self.base_dir = "auto_posts"
+        self.timezone = TelegramConfig.LOCAL_TIMEZONE
+        self.base_dir = TopPostConfig.ARCHIVE_BASE_DIR
 
     async def init_client(self):
         self.reddit = await RedditClientManager.get_client()

@@ -2,6 +2,7 @@
 
 import os
 import asyncpraw
+from datetime import timezone, timedelta
 
 from dotenv import load_dotenv
 
@@ -37,7 +38,6 @@ class RedditConfig:
             password=config["REDDIT_PASSWORD"],
         )
 
-
 class RedditClientManager:
     _client = None
 
@@ -50,14 +50,11 @@ class RedditClientManager:
             cls._client = await RedditConfig.initialize_reddit()
         return cls._client
 
-
 class TimeoutConfig:
     DOWNLOAD_TIMEOUT = 300
 
-
 class RetryConfig:
     RETRY_ATTEMPTS = 5
-
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50
@@ -65,6 +62,62 @@ class MediaConfig:
     MAX_MEDIA_COUNT = 5
     POST_LIMIT = 100
 
+class PipelineConfig:
+    INITIAL_BACKOFF_SECONDS = 1.0
+    MAX_BACKOFF_SECONDS = 30.0
+    BACKOFF_MULTIPLIER = 1.5
+    MAX_PROCESSED_URLS = 10_000
+
+class SchedulerConfig:
+    DAILY_POST_HOUR = 20
+    WEEKLY_POST_HOUR = 21
+    MONTHLY_POST_HOUR = 0
+    YEARLY_POST_HOUR = 0
+    WEEKLY_POST_DAYS = (0,)  # Sunday
+    FOLLOW_CHECK_INTERVAL_SECONDS = 300
+    FOLLOW_CHECK_FIRST_DELAY = 10
+
+class FollowUserConfig:
+    POST_AGE_THRESHOLD_SECONDS = 600
+
+class TelegramConfig:
+    LOCAL_TIMEZONE = timezone(timedelta(hours=3))
+
+class LogConfig:
+    SKIP_LOG_PATH = "logs/skip_debug.log"
+    ACCEPTED_LOG_PATH = "logs/accepted_debug.log"
+
+class RedditDefaults:
+    DEFAULT_SORT_WITH_TIME_FILTER = "top"
+    DEFAULT_SORT_NO_TIME_FILTER = "hot"
+
+class RedditVideoConfig:
+    DASH_RESOLUTIONS = ["1080", "720", "480", "360"]
+
+class CommentFilterConfig:
+    BLACKLIST_TERMS = {
+        "http", "www", ".com", "[deleted]", "sauce", "[removed]",
+        "u/", "source", "![gif]"
+    }
+
+class MediaValidationConfig:
+    VALID_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webm", ".gifv")
+
+    VALID_SOURCES = [
+        "/gallery/", "v.redd.it", "i.redd.it", "imgur.com", "streamable.com",
+        "redgifs.com", "kick.com", "twitch.tv", "youtube.com", "youtu.be",
+        "twitter.com", "x.com"
+    ]
+
+class FileStateConfig:
+    FOLLOWED_USERS_PATH = "followed_users.json"
+    SEEN_POSTS_PATH = "seen_user_posts.json"
+    FOLLOW_MAP_PATH = "follower_map.json"
+    FILTER_MAP_PATH = "user_filters.json"
+
+class TopPostConfig:
+    DEFAULT_SUBREDDIT = "kpopfap"
+    ARCHIVE_BASE_DIR = "auto_posts"
 
 class Messages:
     USAGE_MESSAGE = (
@@ -76,9 +129,42 @@ class Messages:
         "  -t  Include title\n"
         "  -a  Include all (title, flair, comment)"
     )
+
     INVALID_FORMAT_MESSAGE = (
         "Invalid command format.\nExample: /r week cats orange 3 video -a"
     )
+
     MAX_COUNT_EXCEEDED_MESSAGE = (
         f"Maximum of {MediaConfig.MAX_MEDIA_COUNT} media files can be fetched at a time."
     )
+
+    NO_ARGUMENTS_PROVIDED = "No arguments provided."
+    NO_SUBREDDITS_PROVIDED = "Please specify at least one valid subreddit."
+    INVALID_SUBREDDIT_FORMAT = "Invalid subreddit format. Ensure names are comma-separated."
+
+    UNEXPECTED_ERROR = "An unexpected error occurred. Please try again."
+
+    TELEGRAM_USERNAME_REQUIRED = "You need a Telegram @username to use this feature."
+
+    FOLLOW_USER_USAGE = "Usage: /follow <reddit_username>"
+    UNFOLLOW_USER_USAGE = "Usage: /unfollow <reddit_username>"
+    USER_NOT_FOUND = "Reddit user u/{username} was not found or is private."
+    CHECK_USER_ERROR = "An error occurred while checking the Reddit user."
+    NOW_FOLLOWING = "You're now following u/{username}!"
+    ALREADY_FOLLOWING = "You're already following u/{username}."
+    UNFOLLOWED = "You've unfollowed u/{username}."
+    NOT_FOLLOWING_ANYONE = "You're not following any Reddit users."
+    FOLLOWING_LIST_HEADER = "You're currently following:\n{users}"
+
+    FILTERS_CLEARED = "Your filters have been cleared."
+    NO_VALID_TERMS = "No valid terms provided."
+    FILTERS_SET = "Filter terms set: {terms}"
+    NO_ACTIVE_FILTERS = "You have no active filters."
+    ACTIVE_FILTERS_TEMPLATE = "Your active filters: {filters}"
+
+    NO_VALID_SUBREDDITS = "No valid or accessible subreddits provided."
+    NO_POSTS_FOUND = "No posts found."
+    PARTIAL_RESULTS = "Only {processed}/{requested} posts found."
+
+    NO_POPULAR_SUBREDDITS = "Failed to fetch random subreddit."
+    RANDOM_FETCH_FAILED = "Random subreddit fetch failed."

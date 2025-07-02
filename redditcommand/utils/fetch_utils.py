@@ -7,7 +7,7 @@ import random
 from typing import List, Optional, Set, Tuple
 from asyncpraw.models import Subreddit, Submission
 
-from redditcommand.config import RedditClientManager, MediaConfig
+from redditcommand.config import RedditClientManager, MediaConfig, Messages
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ class RandomSearch:
             subreddits = [sub async for sub in reddit.subreddits.popular(limit=100)]
             if not subreddits:
                 logger.warning("No popular subreddits found.")
-                await update.message.reply_text("Failed to fetch random subreddit.")
+                await update.message.reply_text(Messages.NO_POPULAR_SUBREDDITS)
                 return [], None
 
             subreddit = random.choice(subreddits)
@@ -130,7 +130,7 @@ class RandomSearch:
 
         except Exception as e:
             logger.error(f"Random search failure: {e}", exc_info=True)
-            await update.message.reply_text("Random subreddit fetch failed.")
+            await update.message.reply_text(Messages.RANDOM_FETCH_FAILED)
             return [], None
 
 

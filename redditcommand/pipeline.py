@@ -8,7 +8,7 @@ from typing import List, Optional
 from telegram import Update
 from asyncpraw import Reddit
 
-from redditcommand.config import RedditClientManager, MediaConfig, RetryConfig
+from redditcommand.config import RedditClientManager, MediaConfig, RetryConfig, RedditDefaults, PipelineConfig
 from redditcommand.utils.pipeline_utils import PipelineHelper
 from redditcommand.fetch import MediaPostFetcher
 from redditcommand.media_handler import MediaProcessor
@@ -22,7 +22,7 @@ class RedditMediaPipeline:
         update: Update,
         subreddit_names: List[str],
         search_terms: List[str],
-        sort: str = "hot",
+        sort: str = RedditDefaults.DEFAULT_SORT_NO_TIME_FILTER,
         time_filter: Optional[str] = None,
         media_count: int = 1,
         media_type: Optional[str] = None,
@@ -46,7 +46,7 @@ class RedditMediaPipeline:
         self.processed_urls = set()
         self.successfully_sent_posts = []
         self.total_processed = 0
-        self.backoff = 1.0
+        self.backoff = PipelineConfig.INITIAL_BACKOFF_SECONDS
 
         self.reddit: Optional[Reddit] = None
         self.fetcher: Optional[MediaPostFetcher] = None
@@ -89,11 +89,11 @@ class RedditMediaPipeline:
                         sleep_duration = self.backoff * random.uniform(0.5, 1.5)
                         logger.warning(f"No new media found. Retrying after {sleep_duration:.2f}s.")
                         await asyncio.sleep(sleep_duration)
-                        self.backoff = min(self.backoff * 1.5, 30.0)
+                        self.backoff = min(self.backoff * PipelineConfig.BACKOFF_MULTIPLIER, PipelineConfig.MAX_BACKOFF_SECONDS)
                         continue
 
                     self.processed_urls.update(post.url for post in posts)
-                    if len(self.processed_urls) > 10_000:
+                    if len(self.processed_urls) > PipelineConfig.MAX_PROCESSED_URLS:
                         logger.warning("Processed URL cache exceeded 10k entries. Resetting.")
                         self.processed_urls.clear()
 

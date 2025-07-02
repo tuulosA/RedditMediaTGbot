@@ -6,7 +6,7 @@ import os
 from urllib.parse import urlparse
 import aiohttp
 
-from redditcommand.config import RedditClientManager
+from redditcommand.config import RedditClientManager, FollowUserConfig
 from redditcommand.utils.filter_utils import FilterUtils
 from redditcommand.utils.media_utils import MediaUtils, MediaDownloader, MediaSender
 from redditcommand.utils.tempfile_utils import TempFileManager
@@ -25,8 +25,6 @@ class FollowUserScheduler:
 
 
 class FollowedUserMonitor:
-    POST_AGE_THRESHOLD_SECONDS = 600  # Only consider posts from the last 10 minutes
-
     def __init__(self):
         self.reddit = None
         self.followed_map = FollowedUserStore.load_user_follower_map()
@@ -50,7 +48,7 @@ class FollowedUserMonitor:
             for post in posts:
                 if post.id in self.seen_post_ids or post.id in self.new_seen:
                     continue
-                if (now - post.created_utc) > self.POST_AGE_THRESHOLD_SECONDS:
+                if (now - post.created_utc) > FollowUserConfig.POST_AGE_THRESHOLD_SECONDS:
                     continue
                 if not FilterUtils.is_valid_url(post.url):
                     continue

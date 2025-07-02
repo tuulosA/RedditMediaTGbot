@@ -5,11 +5,13 @@ import logging
 from typing import Optional, Set
 from asyncpraw.models import Submission
 
+from redditcommand.config import MediaValidationConfig, LogConfig
+
 logger = logging.getLogger(__name__)
 
 # Skip logger to log rejected posts by reason
 skip_logger = logging.getLogger("skip_debug")
-skip_file_handler = logging.FileHandler("logs/skip_debug.log", mode="w", encoding="utf-8")
+skip_file_handler = logging.FileHandler(LogConfig.SKIP_LOG_PATH, mode="w", encoding="utf-8")
 skip_file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
 skip_logger.setLevel(logging.INFO)
 skip_logger.addHandler(skip_file_handler)
@@ -17,7 +19,7 @@ skip_logger.propagate = False
 
 # Accepted logger to log posts that passed filters
 accepted_logger = logging.getLogger("accepted_debug")
-accepted_file_handler = logging.FileHandler("logs/accepted_debug.log", mode="w", encoding="utf-8")
+accepted_file_handler = logging.FileHandler(LogConfig.ACCEPTED_LOG_PATH, mode="w", encoding="utf-8")
 accepted_file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
 accepted_logger.setLevel(logging.INFO)
 accepted_logger.addHandler(accepted_file_handler)
@@ -68,12 +70,10 @@ class FilterUtils:
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
-        valid_exts = (".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webm", ".gifv")
-        valid_sources = [
-            "/gallery/", "v.redd.it", "i.redd.it", "imgur.com", "streamable.com",
-            "redgifs.com", "kick.com", "twitch.tv", "youtube.com", "youtu.be", "twitter.com", "x.com"
-        ]
-        return url.lower().endswith(valid_exts) or any(p in url for p in valid_sources)
+        return (
+            url.lower().endswith(MediaValidationConfig.VALID_EXTENSIONS) or
+            any(p in url for p in MediaValidationConfig.VALID_SOURCES)
+        )
 
     @staticmethod
     def match_type(url: str, media_type: Optional[str]) -> bool:

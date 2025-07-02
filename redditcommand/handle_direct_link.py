@@ -9,6 +9,8 @@ from typing import Optional
 from redgifs.aio import API as RedGifsAPI
 from asyncpraw.models import Submission
 
+from redditcommand.config import RedditVideoConfig
+
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.media_utils import MediaDownloader
 from redditcommand.utils.reddit_video_resolver import RedditVideoResolver
@@ -47,7 +49,7 @@ class MediaLinkResolver:
         return None
 
     async def _v_reddit(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
-        dash_urls = [f"{media_url}/DASH_{res}.mp4" for res in ["1080", "720", "480", "360"]]
+        dash_urls = [f"{media_url}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
         valid_url = await MediaDownloader.find_first_valid_url(dash_urls, self.session)
         if not valid_url:
             return None

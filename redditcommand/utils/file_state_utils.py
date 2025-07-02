@@ -4,12 +4,13 @@ import os
 import json
 from typing import Set, Dict, List
 
+from redditcommand.config import FileStateConfig
 
 class FollowedUserStore:
-    FOLLOWED_USERS_PATH = "followed_users.json"
-    SEEN_POSTS_PATH = "seen_user_posts.json"
-    FOLLOW_MAP_PATH = "follower_map.json"  # new structure: { "reddit_user": ["tg_username1", ...] }
-    FILTER_MAP_PATH = "user_filters.json"  # { "tg_username": ["keyword1", "keyword2", ...] }
+    FOLLOWED_USERS_PATH = FileStateConfig.FOLLOWED_USERS_PATH
+    SEEN_POSTS_PATH = FileStateConfig.SEEN_POSTS_PATH
+    FOLLOW_MAP_PATH = FileStateConfig.FOLLOW_MAP_PATH
+    FILTER_MAP_PATH = FileStateConfig.FILTER_MAP_PATH
 
     @classmethod
     def load_seen_post_ids(cls) -> Set[str]:

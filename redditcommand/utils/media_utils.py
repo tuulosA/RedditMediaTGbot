@@ -14,7 +14,7 @@ from PIL import Image
 from urllib.parse import urlparse
 
 from redditcommand.utils.tempfile_utils import TempFileManager
-from redditcommand.config import TimeoutConfig
+from redditcommand.config import TimeoutConfig, CommentFilterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,6 @@ class MediaSender:
                 photo=telegram_file,
                 caption=caption,
             )
-
 
 class MediaUtils:
     @staticmethod
@@ -187,7 +186,7 @@ class MediaUtils:
         try:
             await post.comments()
             for c in post.comments.list():
-                if c.body and not any(bad in c.body.lower() for bad in ["http", "www", ".com", "[deleted]", "sauce", "[removed]", "u/", "source", "![gif]"]):
+                if c.body and not any(term in c.body.lower() for term in CommentFilterConfig.BLACKLIST_TERMS):
                     return c if return_author else c.body
         except Exception as e:
             logger.warning(f"Top comment fetch failed: {e}")
