@@ -85,7 +85,7 @@ class MediaProcessor:
         if not file_path:
             return None
 
-        if await Compressor.is_valid(file_path, MediaConfig.MAX_FILE_SIZE_MB):
+        if await Compressor.validate_and_compress(file_path, MediaConfig.MAX_FILE_SIZE_MB):
             return file_path
 
         logger.warning(f"File too large after download: {file_path}")

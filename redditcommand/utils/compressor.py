@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Compressor:
     @staticmethod
-    async def is_valid(file_path: str, max_size_mb: int) -> bool:
+    async def validate_and_compress(file_path: str, max_size_mb: int) -> bool:
         if not os.path.exists(file_path):
             logger.warning(f"Validation failed: File does not exist: {file_path}")
             return False
