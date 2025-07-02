@@ -18,7 +18,7 @@ from redditcommand.automatic_posts import (
 )
 
 class TelegramRegistrar:
-    HELSINKI_TIME = timezone(timedelta(hours=3))
+    LOCAL_TIME = timezone(timedelta(hours=3))
 
     @classmethod
     def register_command_handlers(cls, application: Application) -> None:
@@ -44,10 +44,10 @@ class TelegramRegistrar:
     def register_jobs(cls, application: Application, chat_id: int) -> None:
         job_queue = application.job_queue
 
-        job_queue.run_daily(send_daily_top_post_job, time=time(20, tzinfo=cls.HELSINKI_TIME), name="daily_top_post")
-        job_queue.run_daily(send_weekly_top_post_job, time=time(21, tzinfo=cls.HELSINKI_TIME), days=(0,), name="weekly_top_post")
-        job_queue.run_daily(send_monthly_top_post_job, time=time(0, 0, tzinfo=cls.HELSINKI_TIME), name="monthly_top_post")
-        job_queue.run_daily(send_yearly_top_post_job, time=time(0, 0, tzinfo=cls.HELSINKI_TIME), name="yearly_top_post")
+        job_queue.run_daily(send_daily_top_post_job, time=time(17, tzinfo=cls.LOCAL_TIME), name="daily_top_post")
+        job_queue.run_daily(send_weekly_top_post_job, time=time(17, tzinfo=cls.LOCAL_TIME), days=(0,), name="weekly_top_post")
+        job_queue.run_daily(send_monthly_top_post_job, time=time(0, 0, tzinfo=cls.LOCAL_TIME), name="monthly_top_post")
+        job_queue.run_daily(send_yearly_top_post_job, time=time(0, 0, tzinfo=cls.LOCAL_TIME), name="yearly_top_post")
 
         job_queue.run_repeating(
             callback=FollowUserScheduler.run,
