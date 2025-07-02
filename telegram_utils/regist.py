@@ -37,13 +37,13 @@ class TelegramRegistrar:
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE DAY", "day"),
-            time=time(18, tzinfo=cls.LOCAL_TIME),
+            time=time(20, tzinfo=cls.LOCAL_TIME),
             name="daily_top_post"
         )
 
         job_queue.run_daily(
             TopPostScheduler.generate_job("TOP POST OF THE WEEK", "week"),
-            time=time(18, tzinfo=cls.LOCAL_TIME),
+            time=time(21, tzinfo=cls.LOCAL_TIME),
             days=(0,),
             name="weekly_top_post"
         )
