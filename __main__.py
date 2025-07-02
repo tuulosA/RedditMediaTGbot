@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from telegram.ext import Application
 
 from redditcommand.utils.logger import setup_logging
-from redditcommand.utils.telegram_utils import register_command_handlers, register_jobs
+from redditcommand.utils import TelegramRegistrar
 
 def main():
     load_dotenv()
@@ -19,8 +19,8 @@ def main():
 
     application = Application.builder().token(telegram_api_key).build()
 
-    register_command_handlers(application)
-    register_jobs(application, int(telegram_chat_id))
+    TelegramRegistrar.register_command_handlers(application)
+    TelegramRegistrar.register_jobs(application, int(telegram_chat_id))
 
     logger.info("Bot is now polling...")
     application.run_polling()

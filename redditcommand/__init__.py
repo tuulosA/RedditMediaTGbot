@@ -12,27 +12,20 @@ from .config import (
 )
 
 # Core pipeline
-from .pipeline import pipeline
+from .pipeline import RedditMediaPipeline
 
 # Fetching & filtering
-from .fetch import fetch_posts_to_list
-from .filter_posts import filter_media_posts
+from .fetch import MediaPostFetcher
+from .filter_posts import FilterUtils  
 
 # Media processing
-from .media_handler import process_media_batch
+from .media_handler import MediaProcessor  
 
-# Telegram commands
-from .commands import (
-    reddit_media_command,
-    follow_user_command,
-    unfollow_user_command,
-    set_filter_command,
-    clear_filter_command,
-    list_followed_users_command,
-)
+# Telegram command handlers
+from .commands import RedditCommandHandler
 
 # Automatic posts & background jobs
-from .automatic_posts.follow_user import check_and_send_new_user_posts
+from .automatic_posts.follow_user import FollowUserScheduler
 
 # Media resolution
-from .handle_direct_link import handle_direct_link
+from .handle_direct_link import MediaLinkResolver  

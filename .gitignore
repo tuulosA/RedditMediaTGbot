@@ -4,5 +4,8 @@ __pycache__/
 .env
 print.py
 print.txt
-follower_map.json
 logs/*.log
+followed_users.json
+seen_user_posts.json
+follower_map.json
+user_filters.json

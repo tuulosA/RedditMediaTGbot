@@ -23,8 +23,8 @@ from .logger import setup_logging
 # Pipeline helpers
 from .pipeline_utils import PipelineHelper
 
-# Telegram bot integration
-from .telegram_utils import register_command_handlers, register_jobs
+# Telegram bot integration (classified)
+from .telegram_utils import TelegramRegistrar
 
 # Temporary file management
 from .tempfile_utils import TempFileManager
