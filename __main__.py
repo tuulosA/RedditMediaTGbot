@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from telegram.ext import Application
 
 from redditcommand.utils.logger import setup_logging
-from redditcommand.utils import TelegramRegistrar
+from telegram_utils.regist import TelegramRegistrar
 
 def main():
     load_dotenv()
