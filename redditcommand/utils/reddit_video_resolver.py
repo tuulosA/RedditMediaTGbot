@@ -8,7 +8,7 @@ import re
 from asyncpraw.models import Submission
 from typing import Optional
 
-from redditcommand.config import RedditDefaults
+from redditcommand.config import RedditVideoConfig
 from redditcommand.utils.tempfile_utils import TempFileManager
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class RedditVideoResolver:
 
     @classmethod
     async def find_dash_url(cls, base_url: str, session: aiohttp.ClientSession) -> str:
-        for res in RedditDefaults.DASH_RESOLUTIONS:
+        for res in RedditVideoConfig.DASH_RESOLUTIONS:
             url = f"{base_url}/DASH_{res}.mp4"
             try:
                 async with session.head(url, timeout=5) as resp:
