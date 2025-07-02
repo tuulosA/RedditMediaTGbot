@@ -120,3 +120,36 @@ class TopPostManager:
                     f.write(f"\nTop comment by u/{author}:\n{top_comment.body.strip()[:1000]}\n")
             f.write(f"\nReddit URL: https://reddit.com/comments/{post.id}\n")
         logger.info(f"Saved metadata to {metadata_path}")
+
+    async def send_top_post(self, label: str, time_filter: str, target: SubredditTarget, archive: bool):
+        await self.init_client()
+        post = await self.fetch_top_post(time_filter)
+        if not post:
+            message = f"Could not find a top post for {label.lower()}."
+            if isinstance(target, Update):
+                await target.message.reply_text(message)
+            else:
+                bot, chat_id = target
+                await bot.send_message(chat_id=chat_id, text=message)
+            return
+
+        caption = self.build_caption(post, label)
+        file_path = post.metadata["file_path"]
+
+        if archive:
+            self.archive_post(post, file_path, time_filter)
+
+        try:
+            async with MediaProcessor(self.reddit, update=None) as processor:
+                success = await processor.upload_media(file_path, target, caption)
+                if not success:
+                    raise RuntimeError("Media upload failed")
+        except Exception as e:
+            logger.error(f"Failed to send top post media: {e}", exc_info=True)
+            fail_msg = f"Failed to send media for {label.lower()}."
+            if isinstance(target, Update):
+                await target.message.reply_text(fail_msg)
+            else:
+                bot, chat_id = target
+                await bot.send_message(chat_id=chat_id, text=fail_msg)
+            

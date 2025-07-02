@@ -4,18 +4,9 @@ from datetime import time, timezone, timedelta
 from telegram.ext import Application, CommandHandler
 
 from redditcommand.commands import RedditCommandHandler
-from redditcommand.automatic_posts import (
-    send_daily_top_post_command,
-    send_weekly_top_post_command,
-    send_monthly_top_post_command,
-    send_yearly_top_post_command,
-    send_all_time_top_post_command,
-    send_daily_top_post_job,
-    send_weekly_top_post_job,
-    send_monthly_top_post_job,
-    send_yearly_top_post_job,
-    FollowUserScheduler
-)
+from redditcommand.automatic_posts.top_post_scheduler import TopPostScheduler
+from redditcommand.automatic_posts.follow_user import FollowUserScheduler
+
 
 class TelegramRegistrar:
     LOCAL_TIME = timezone(timedelta(hours=3))
@@ -30,11 +21,11 @@ class TelegramRegistrar:
             'filter': RedditCommandHandler.set_filter_command,
             'clearfilters': RedditCommandHandler.clear_filter_command,
 
-            'rtopday': send_daily_top_post_command,
-            'rtopweek': send_weekly_top_post_command,
-            'rtopmonth': send_monthly_top_post_command,
-            'rtopyear': send_yearly_top_post_command,
-            'rtopall': send_all_time_top_post_command
+            'rtopday': TopPostScheduler.generate_command("TOP POST OF THE DAY", "day"),
+            'rtopweek': TopPostScheduler.generate_command("TOP POST OF THE WEEK", "week"),
+            'rtopmonth': TopPostScheduler.generate_command("TOP POST OF THE MONTH", "month"),
+            'rtopyear': TopPostScheduler.generate_command("TOP POST OF THE YEAR", "year"),
+            'rtopall': TopPostScheduler.generate_command("TOP POST OF ALL TIME", "all")
         }
 
         for cmd, handler in commands.items():
@@ -44,10 +35,30 @@ class TelegramRegistrar:
     def register_jobs(cls, application: Application, chat_id: int) -> None:
         job_queue = application.job_queue
 
-        job_queue.run_daily(send_daily_top_post_job, time=time(17, tzinfo=cls.LOCAL_TIME), name="daily_top_post")
-        job_queue.run_daily(send_weekly_top_post_job, time=time(17, tzinfo=cls.LOCAL_TIME), days=(0,), name="weekly_top_post")
-        job_queue.run_daily(send_monthly_top_post_job, time=time(0, 0, tzinfo=cls.LOCAL_TIME), name="monthly_top_post")
-        job_queue.run_daily(send_yearly_top_post_job, time=time(0, 0, tzinfo=cls.LOCAL_TIME), name="yearly_top_post")
+        job_queue.run_daily(
+            TopPostScheduler.generate_job("TOP POST OF THE DAY", "day"),
+            time=time(17, tzinfo=cls.LOCAL_TIME),
+            name="daily_top_post"
+        )
+
+        job_queue.run_daily(
+            TopPostScheduler.generate_job("TOP POST OF THE WEEK", "week"),
+            time=time(17, tzinfo=cls.LOCAL_TIME),
+            days=(0,),
+            name="weekly_top_post"
+        )
+
+        job_queue.run_daily(
+            TopPostScheduler.generate_job("TOP POST OF THE MONTH", "month"),
+            time=time(0, 0, tzinfo=cls.LOCAL_TIME),
+            name="monthly_top_post"
+        )
+
+        job_queue.run_daily(
+            TopPostScheduler.generate_job("TOP POST OF THE YEAR", "year"),
+            time=time(0, 0, tzinfo=cls.LOCAL_TIME),
+            name="yearly_top_post"
+        )
 
         job_queue.run_repeating(
             callback=FollowUserScheduler.run,

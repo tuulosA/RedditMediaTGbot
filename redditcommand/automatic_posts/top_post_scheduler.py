@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 
 from redditcommand.automatic_posts.top_post import TopPostManager
 
+
 class TopPostScheduler:
     TIMEZONE = timezone(timedelta(hours=3))
 
