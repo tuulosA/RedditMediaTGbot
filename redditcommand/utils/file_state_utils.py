@@ -12,16 +12,6 @@ class FollowedUserStore:
     FILTER_MAP_PATH = "user_filters.json"  # { "tg_username": ["keyword1", "keyword2", ...] }
 
     @classmethod
-    def load_followed_users(cls) -> Set[str]:
-        # legacy fallback
-        return set(cls.load_user_follower_map().keys())
-
-    @classmethod
-    def save_followed_users(cls, users: Set[str]):
-        # legacy fallback to keep compat
-        cls.save_user_follower_map({u: [] for u in users})
-
-    @classmethod
     def load_seen_post_ids(cls) -> Set[str]:
         if not os.path.exists(cls.SEEN_POSTS_PATH):
             return set()
