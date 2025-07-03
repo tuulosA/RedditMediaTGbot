@@ -2,7 +2,7 @@
 
 import os
 import json
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Optional
 
 from redditcommand.config import FileStateConfig
 
@@ -11,6 +11,7 @@ class FollowedUserStore:
     SEEN_POSTS_PATH = FileStateConfig.SEEN_POSTS_PATH
     FOLLOW_MAP_PATH = FileStateConfig.FOLLOW_MAP_PATH
     FILTER_MAP_PATH = FileStateConfig.FILTER_MAP_PATH
+    SUBREDDIT_MAP_PATH = FileStateConfig.SUBREDDIT_MAP_PATH
 
     @classmethod
     def load_seen_post_ids(cls) -> Set[str]:
@@ -87,3 +88,21 @@ class FollowedUserStore:
         if tg_username in filters:
             del filters[tg_username]
             cls.save_user_filters(filters)
+
+    @classmethod
+    def get_global_top_subreddit(cls) -> Optional[str]:
+        if not os.path.exists(cls.SUBREDDIT_MAP_PATH):
+            return None
+        with open(cls.SUBREDDIT_MAP_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    @classmethod
+    def set_global_top_subreddit(cls, subreddit: str):
+        os.makedirs(os.path.dirname(cls.SUBREDDIT_MAP_PATH) or ".", exist_ok=True)
+        with open(cls.SUBREDDIT_MAP_PATH, "w", encoding="utf-8") as f:
+            json.dump(subreddit, f)
+
+    @classmethod
+    def clear_global_top_subreddit(cls):
+        if os.path.exists(cls.SUBREDDIT_MAP_PATH):
+            os.remove(cls.SUBREDDIT_MAP_PATH)

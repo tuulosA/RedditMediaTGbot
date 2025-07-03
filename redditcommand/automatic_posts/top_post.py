@@ -11,20 +11,31 @@ from redditcommand.utils.filter_utils import FilterUtils
 from redditcommand.utils.media_utils import MediaUtils
 from redditcommand.automatic_posts.top_post_utils import TopPostUtils
 from redditcommand.media_handler import MediaProcessor
+from redditcommand.utils.file_state_utils import FollowedUserStore
 
 logger = logging.getLogger(__name__)
 SubredditTarget = Union[Update, Tuple[Bot, int]]
 
 
 class TopPostManager:
-    def __init__(self, subreddit: str = TopPostConfig.DEFAULT_SUBREDDIT):
-        self.subreddit = subreddit
+    def __init__(
+        self,
+        subreddit: Optional[str] = None,
+        target: Optional[SubredditTarget] = None
+    ):
+        self.subreddit = subreddit or TopPostConfig.DEFAULT_SUBREDDIT
         self.reddit = None
+        self.target = target
         self.timezone = TelegramConfig.LOCAL_TIMEZONE
         self.base_dir = TopPostConfig.ARCHIVE_BASE_DIR
 
     async def init_client(self):
         self.reddit = await RedditClientManager.get_client()
+
+    async def resolve_global_subreddit(self):
+        custom = FollowedUserStore.get_global_top_subreddit()
+        if custom:
+            self.subreddit = custom
 
     async def fetch_top_post(self, time_filter: str) -> Optional[Submission]:
         try:
@@ -59,7 +70,10 @@ class TopPostManager:
             return None
 
     async def send_top_post(self, label: str, time_filter: str, target: SubredditTarget, archive: bool):
+        self.target = target
+        await self.resolve_global_subreddit()
         await self.init_client()
+
         post = await self.fetch_top_post(time_filter)
         if not post:
             message = f"Could not find a top post for {label.lower()}."

@@ -21,6 +21,7 @@ class TelegramRegistrar:
             'unfollow': RedditCommandHandler.unfollow_user_command,
             'filter': RedditCommandHandler.set_filter_command,
             'clearfilters': RedditCommandHandler.clear_filter_command,
+            'setsubreddit': RedditCommandHandler.set_subreddit_command,
 
             'rtopday': TopPostScheduler.generate_command("TOP POST OF THE DAY", "day"),
             'rtopweek': TopPostScheduler.generate_command("TOP POST OF THE WEEK", "week"),

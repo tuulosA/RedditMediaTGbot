@@ -122,9 +122,10 @@ class FileStateConfig:
     SEEN_POSTS_PATH = "seen_user_posts.json"
     FOLLOW_MAP_PATH = "follower_map.json"
     FILTER_MAP_PATH = "user_filters.json"
+    SUBREDDIT_MAP_PATH = "followed_subreddit.json"
 
 class TopPostConfig:
-    DEFAULT_SUBREDDIT = "kpopfap"
+    DEFAULT_SUBREDDIT = "cats"
     ARCHIVE_BASE_DIR = "auto_posts"
 
 class SkipReasons:

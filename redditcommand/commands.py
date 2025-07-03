@@ -158,3 +158,18 @@ class RedditCommandHandler:
         else:
             FollowedUserStore.remove_follower(reddit_username, tg_user)
             await update.message.reply_text(Messages.UNFOLLOWED.format(username=reddit_username))
+
+    @staticmethod
+    async def set_subreddit_command(update: Update, context: CallbackContext) -> None:
+        if not context.args:
+            await update.message.reply_text("Please provide a subreddit name. Usage: /setsubreddit [subreddit]")
+            return
+
+        subreddit = context.args[0].strip().lower()
+        if not subreddit.isalnum():
+            await update.message.reply_text("Invalid subreddit name.")
+            return
+
+        FollowedUserStore.set_global_top_subreddit(subreddit)
+        await update.message.reply_text(f"Default subreddit for top posts set to: r/{subreddit}")
+
