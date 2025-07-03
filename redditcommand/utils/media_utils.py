@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.config import TimeoutConfig, CommentFilterConfig
+from redditcommand.utils.session import GlobalSession
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +195,8 @@ class MediaUtils:
 
 class MediaDownloader:
     @staticmethod
-    async def find_first_valid_url(urls: list[str], session: aiohttp.ClientSession) -> Optional[str]:
+    async def find_first_valid_url(urls: list[str], session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
+        session = session or await GlobalSession.get()
         for url in urls:
             try:
                 async with session.get(url, timeout=10) as response:
@@ -206,7 +208,8 @@ class MediaDownloader:
         return None
 
     @staticmethod
-    async def download_file(url: str, file_path: str, session: aiohttp.ClientSession) -> Optional[str]:
+    async def download_file(url: str, file_path: str, session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
+        session = session or await GlobalSession.get()
         try:
             timeout = aiohttp.ClientTimeout(total=TimeoutConfig.DOWNLOAD_TIMEOUT)
             async with session.get(url, timeout=timeout) as response:

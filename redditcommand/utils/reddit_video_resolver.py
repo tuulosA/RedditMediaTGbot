@@ -10,6 +10,7 @@ from typing import Optional
 
 from redditcommand.config import RedditVideoConfig
 from redditcommand.utils.tempfile_utils import TempFileManager
+from redditcommand.utils.session import GlobalSession
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,8 @@ class RedditVideoResolver:
         return f"https://m.reddit.com/r/{subreddit}/comments/{post_id}/{slug}/"
 
     @staticmethod
-    async def fetch_post_html(url: str, session: aiohttp.ClientSession) -> str:
+    async def fetch_post_html(url: str, session: Optional[aiohttp.ClientSession] = None) -> str:
+        session = session or await GlobalSession.get()
         headers = {"User-Agent": "Mozilla/5.0"}
         async with session.get(url, headers=headers, allow_redirects=True) as resp:
             return await resp.text()
@@ -40,7 +42,9 @@ class RedditVideoResolver:
         return match.group(0) if match else ""
 
     @classmethod
-    async def find_dash_url(cls, base_url: str, session: aiohttp.ClientSession) -> str:
+    async def find_dash_url(cls, base_url: str, session: Optional[aiohttp.ClientSession] = None) -> str:
+        session = session or await GlobalSession.get()
+
         for res in RedditVideoConfig.DASH_RESOLUTIONS:
             url = f"{base_url}/DASH_{res}.mp4"
             try:
@@ -51,11 +55,14 @@ class RedditVideoResolver:
                 logger.debug(f"[Resolver] DASH_{res} not accessible: {e}")
             except Exception as e:
                 logger.error(f"[Resolver] Unexpected error while checking DASH_{res}: {e}", exc_info=True)
+
         return ""
 
     @classmethod
-    async def resolve_video(cls, post: Submission, session: aiohttp.ClientSession) -> Optional[str]:
+    async def resolve_video(cls, post: Submission, session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
         try:
+            session = session or await GlobalSession.get()
+
             html = await cls.fetch_post_html(
                 cls.build_mobile_url(post.subreddit.display_name, post.id, post.title), session
             )

@@ -18,6 +18,7 @@ from .handle_direct_link import MediaLinkResolver
 from redditcommand.utils.media_utils import MediaSender, MediaUtils, MediaDownloader, CaptionBuilder
 from redditcommand.utils.compressor import Compressor
 from redditcommand.utils.tempfile_utils import TempFileManager
+from redditcommand.utils.session import GlobalSession
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +30,11 @@ class MediaProcessor:
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        self.session = await GlobalSession.get()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.session:
-            await self.session.close()
+        pass
 
     async def process_batch(self, media_list, include_comments, include_flair, include_title):
         tasks = [
@@ -74,7 +74,8 @@ class MediaProcessor:
             if "gallery" in media_url:
                 return await MediaUtils.resolve_reddit_gallery(media_url.split("/")[-1], self.reddit)
 
-            resolver = MediaLinkResolver(self.session)
+            resolver = MediaLinkResolver()
+            await resolver.init()
             return await resolver.resolve(media_url, post=post)
         except Exception as e:
             logger.error(f"Error resolving media URL for post {post.id}: {e}", exc_info=True)
@@ -105,7 +106,7 @@ class MediaProcessor:
         final_id = post_id or TempFileManager.extract_post_id_from_url(resolved_url) or "unknown"
         file_path = os.path.join(temp_dir, f"reddit_{final_id}{ext}")
 
-        file_path = await MediaDownloader.download_file(resolved_url, file_path, self.session)
+        file_path = await MediaDownloader.download_file(resolved_url, file_path)
         if file_path and file_path.endswith(".gif"):
             converted = await MediaUtils.convert_gif_to_mp4(file_path)
             TempFileManager.cleanup_file(file_path)

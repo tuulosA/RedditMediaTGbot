@@ -33,13 +33,15 @@ class FollowedUserMonitor:
 
     async def check_and_send_all(self, target):
         self.reddit = await RedditClientManager.get_client()
-        async with aiohttp.ClientSession() as session:
-            resolver = MediaLinkResolver(session)
-            for reddit_user, telegram_users in self.followed_map.items():
-                await self._handle_user_posts(reddit_user, telegram_users, session, resolver, target)
+        resolver = MediaLinkResolver()
+        await resolver.init()
+
+        for reddit_user, telegram_users in self.followed_map.items():
+            await self._handle_user_posts(reddit_user, telegram_users, resolver, target)
+
         FollowedUserStore.save_seen_post_ids(self.new_seen)
 
-    async def _handle_user_posts(self, reddit_user, telegram_users, session, resolver, target):
+    async def _handle_user_posts(self, reddit_user, telegram_users, resolver, target):
         try:
             redditor = await self.reddit.redditor(reddit_user)
             posts = [post async for post in redditor.submissions.new(limit=5)]
@@ -55,11 +57,11 @@ class FollowedUserMonitor:
 
                 await FilterUtils.attach_metadata(post)
 
-                resolved_url = await self._resolve_media(post, session, resolver)
+                resolved_url = await self._resolve_media(post, resolver)
                 if not resolved_url:
                     continue
 
-                file_path = await self._download_and_validate_media(post, resolved_url, session)
+                file_path = await self._download_and_validate_media(post, resolved_url)
                 if not file_path:
                     continue
 
@@ -77,7 +79,7 @@ class FollowedUserMonitor:
         except Exception as e:
             logger.error(f"Failed to process posts from u/{reddit_user}: {e}", exc_info=True)
 
-    async def _resolve_media(self, post, session, resolver: MediaLinkResolver):
+    async def _resolve_media(self, post, resolver: MediaLinkResolver):
         if getattr(post, "is_gallery", False) and hasattr(post, "media_metadata"):
             try:
                 top_item = post.gallery_data["items"][0]
@@ -93,17 +95,18 @@ class FollowedUserMonitor:
             return await resolver.resolve(post.url, post)
         return None
 
-    async def _download_and_validate_media(self, post, resolved_url, session):
+    async def _download_and_validate_media(self, post, resolved_url):
         if resolved_url.startswith("http://") or resolved_url.startswith("https://"):
             temp_dir = TempFileManager.create_temp_dir("follow_")
             filename = os.path.basename(urlparse(resolved_url).path) or f"{post.id}.media"
             file_path = os.path.join(temp_dir, filename)
-            file_path = await MediaDownloader.download_file(resolved_url, file_path, session)
+            file_path = await MediaDownloader.download_file(resolved_url, file_path)
         else:
             file_path = resolved_url
 
         if not file_path or not await MediaUtils.validate_file(file_path):
             return None
+
         return file_path
 
     def _should_skip_post(self, tg_user, post_text):

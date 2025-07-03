@@ -14,15 +14,22 @@ from redditcommand.config import RedditVideoConfig
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.media_utils import MediaDownloader
 from redditcommand.utils.reddit_video_resolver import RedditVideoResolver
+from redditcommand.utils.session import GlobalSession
 
 logger = logging.getLogger(__name__)
 
 
 class MediaLinkResolver:
-    def __init__(self, session: aiohttp.ClientSession):
-        self.session = session
+    def __init__(self):
+        self.session: Optional[aiohttp.ClientSession] = None
+
+    async def init(self):
+        self.session = await GlobalSession.get()
 
     async def resolve(self, media_url: str, post: Optional[Submission] = None) -> Optional[str]:
+        if self.session is None:
+            await self.init()
+
         try:
             if "v.redd.it" in media_url:
                 return await self._v_reddit(media_url, post)
@@ -32,13 +39,7 @@ class MediaLinkResolver:
                 return await self._streamable(media_url, post)
             if "redgifs.com" in media_url:
                 return await self._redgifs(media_url, post)
-            if "kick.com" in media_url:
-                return await self._yt_dlp(media_url, post)
-            if "twitch.tv" in media_url:
-                return await self._yt_dlp(media_url, post)
-            if "youtube.com" in media_url or "youtu.be" in media_url:
-                return await self._yt_dlp(media_url, post)
-            if "x.com" in media_url or "twitter.com" in media_url:
+            if any(domain in media_url for domain in ["kick.com", "twitch.tv", "youtube.com", "youtu.be", "x.com", "twitter.com"]):
                 return await self._yt_dlp(media_url, post)
             if media_url.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".mp4")):
                 return media_url
@@ -47,23 +48,26 @@ class MediaLinkResolver:
         except Exception as e:
             logger.error(f"Error resolving direct link for {media_url}: {e}", exc_info=True)
         return None
-
+    
     async def _v_reddit(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
         dash_urls = [f"{media_url}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
-        valid_url = await MediaDownloader.find_first_valid_url(dash_urls, self.session)
+
+        valid_url = await MediaDownloader.find_first_valid_url(dash_urls)
         if not valid_url:
             return None
+
         post_id = post.id if post else TempFileManager.extract_post_id_from_url(media_url)
         file_path = os.path.join(
             TempFileManager.create_temp_dir("reddit_video_"),
             f"reddit_{post_id or 'unknown'}.mp4"
         )
-        return await MediaDownloader.download_file(valid_url, file_path, self.session)
+
+        return await MediaDownloader.download_file(valid_url, file_path)
 
     async def _imgur(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
         try:
             if post:
-                fallback = await RedditVideoResolver.resolve_video(post, self.session)
+                fallback = await RedditVideoResolver.resolve_video(post)
                 if fallback:
                     return fallback
             logger.warning(f"RedditVideoResolver failed and yt-dlp is disabled for {media_url}")
@@ -88,7 +92,7 @@ class MediaLinkResolver:
                     TempFileManager.create_temp_dir("reddit_streamable_"),
                     f"reddit_{post_id}.mp4"
                 )
-                return await MediaDownloader.download_file(resolved, file_path, self.session)
+                return await MediaDownloader.download_file(resolved, file_path)  # ⬅️ session removed
         except Exception as e:
             logger.error(f"Streamable error: {e}", exc_info=True)
         return None
@@ -108,7 +112,7 @@ class MediaLinkResolver:
                 TempFileManager.create_temp_dir("reddit_redgifs_"),
                 f"reddit_{post_id}.mp4"
             )
-            return await MediaDownloader.download_file(url, file_path, self.session)
+            return await MediaDownloader.download_file(url, file_path)  # ⬅️ session removed
         except Exception as e:
             logger.error(f"RedGifs error: {e}", exc_info=True)
         return None
