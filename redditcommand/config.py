@@ -127,6 +127,23 @@ class TopPostConfig:
     DEFAULT_SUBREDDIT = "kpopfap"
     ARCHIVE_BASE_DIR = "auto_posts"
 
+class SkipReasons:
+    NON_MEDIA = "non-media"
+    PROCESSED = "processed"
+    GFYCAT = "gfycat"
+    WRONG_TYPE = "wrong type"
+    BLACKLISTED = "blacklisted"
+
+    @classmethod
+    def all(cls) -> list[str]:
+        return [
+            cls.NON_MEDIA,
+            cls.PROCESSED,
+            cls.GFYCAT,
+            cls.WRONG_TYPE,
+            cls.BLACKLISTED,
+        ]
+
 class Messages:
     USAGE_MESSAGE = (
         "Usage: /r [all/year/month/week/day] [subreddit(s)] [term(s)] [count] [image/video] "

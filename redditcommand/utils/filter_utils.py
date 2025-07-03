@@ -6,6 +6,7 @@ from asyncpraw.models import Submission
 
 from redditcommand.utils.logging_utils import setup_skip_logger, setup_accepted_logger
 from redditcommand.utils.url_utils import is_valid_media_url, matches_media_type
+from redditcommand.config import SkipReasons
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +40,13 @@ class FilterUtils:
         reason = None
 
         if not url or not is_valid_media_url(url):
-            reason = "non-media"
+            reason = SkipReasons.NON_MEDIA
         elif url in processed_urls:
-            reason = "processed"
+            reason = SkipReasons.PROCESSED
         elif FilterUtils.is_gfycat(url):
-            reason = "gfycat"
+            reason = SkipReasons.GFYCAT
         elif not matches_media_type(url, media_type):
-            reason = "wrong type"
+            reason = SkipReasons.WRONG_TYPE
 
         if reason:
             skip_logger.info(

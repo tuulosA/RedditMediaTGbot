@@ -6,6 +6,7 @@ from typing import List, Optional, Set
 from asyncpraw.models import Submission
 
 from redditcommand.utils.filter_utils import FilterUtils
+from redditcommand.config import SkipReasons
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,13 @@ class MediaPostFilter:
             logger.warning(f"No posts to filter in r/{self.subreddit_name}")
             return []
 
-        skipped = {"non-media": 0, "blacklisted": 0, "processed": 0, "gfycat": 0, "wrong type": 0}
+        skipped = {
+            SkipReasons.NON_MEDIA: 0,
+            SkipReasons.BLACKLISTED: 0,
+            SkipReasons.PROCESSED: 0,
+            SkipReasons.GFYCAT: 0,
+            SkipReasons.WRONG_TYPE: 0
+        }
         filtered = []
 
         for post in posts:
