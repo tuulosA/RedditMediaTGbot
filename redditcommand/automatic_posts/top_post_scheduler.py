@@ -13,7 +13,8 @@ class TopPostScheduler:
 
     @classmethod
     async def run_command(cls, label: str, time_filter: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        manager = TopPostManager()
+        subreddit = context.args[0].strip().lower() if context.args else None
+        manager = TopPostManager(subreddit=subreddit, target=update)
         await manager.send_top_post(label, time_filter, update, archive=False)
 
     @classmethod

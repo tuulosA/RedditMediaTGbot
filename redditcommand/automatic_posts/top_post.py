@@ -23,7 +23,7 @@ class TopPostManager:
         subreddit: Optional[str] = None,
         target: Optional[SubredditTarget] = None
     ):
-        self.subreddit = subreddit or TopPostConfig.DEFAULT_SUBREDDIT
+        self.subreddit = subreddit
         self.reddit = None
         self.target = target
         self.timezone = TelegramConfig.LOCAL_TIMEZONE
@@ -71,7 +71,12 @@ class TopPostManager:
 
     async def send_top_post(self, label: str, time_filter: str, target: SubredditTarget, archive: bool):
         self.target = target
-        await self.resolve_global_subreddit()
+
+        if not self.subreddit:
+            await self.resolve_global_subreddit()
+        if not self.subreddit:
+            self.subreddit = TopPostConfig.DEFAULT_SUBREDDIT
+
         await self.init_client()
 
         post = await self.fetch_top_post(time_filter)

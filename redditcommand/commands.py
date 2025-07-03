@@ -172,4 +172,3 @@ class RedditCommandHandler:
 
         FollowedUserStore.set_global_top_subreddit(subreddit)
         await update.message.reply_text(f"Default subreddit for top posts set to: r/{subreddit}")
-
