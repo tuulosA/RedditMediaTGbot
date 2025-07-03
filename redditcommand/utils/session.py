@@ -1,7 +1,6 @@
-import aiohttp
-from typing import Optional
-
 # redditcommand/utils/session.py
+
+import aiohttp
 
 class GlobalSession:
     _session = None

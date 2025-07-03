@@ -1,29 +1,16 @@
 # redditcommand/utils/filter_utils.py
 
 import logging
-
 from typing import Optional, Set
 from asyncpraw.models import Submission
 
-from redditcommand.config import MediaValidationConfig, LogConfig
+from redditcommand.utils.logging_utils import setup_skip_logger, setup_accepted_logger
+from redditcommand.utils.url_utils import is_valid_media_url, matches_media_type
 
 logger = logging.getLogger(__name__)
 
-# Skip logger to log rejected posts by reason
-skip_logger = logging.getLogger("skip_debug")
-skip_file_handler = logging.FileHandler(LogConfig.SKIP_LOG_PATH, mode="w", encoding="utf-8")
-skip_file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
-skip_logger.setLevel(logging.INFO)
-skip_logger.addHandler(skip_file_handler)
-skip_logger.propagate = False
-
-# Accepted logger to log posts that passed filters
-accepted_logger = logging.getLogger("accepted_debug")
-accepted_file_handler = logging.FileHandler(LogConfig.ACCEPTED_LOG_PATH, mode="w", encoding="utf-8")
-accepted_file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
-accepted_logger.setLevel(logging.INFO)
-accepted_logger.addHandler(accepted_file_handler)
-accepted_logger.propagate = False
+skip_logger = setup_skip_logger()
+accepted_logger = setup_accepted_logger()
 
 
 class FilterUtils:
@@ -51,13 +38,13 @@ class FilterUtils:
         url = post.url or ""
         reason = None
 
-        if not url or not FilterUtils.is_valid_url(url):
+        if not url or not is_valid_media_url(url):
             reason = "non-media"
         elif url in processed_urls:
             reason = "processed"
         elif FilterUtils.is_gfycat(url):
             reason = "gfycat"
-        elif not FilterUtils.match_type(url, media_type):
+        elif not matches_media_type(url, media_type):
             reason = "wrong type"
 
         if reason:
@@ -67,26 +54,6 @@ class FilterUtils:
                 f"Upvotes: {post.score} | Media URL: {post.url} | Post Link: https://reddit.com/comments/{post.id}"
             )
         return reason
-
-    @staticmethod
-    def is_valid_url(url: str) -> bool:
-        return (
-            url.lower().endswith(MediaValidationConfig.VALID_EXTENSIONS) or
-            any(p in url for p in MediaValidationConfig.VALID_SOURCES)
-        )
-
-    @staticmethod
-    def match_type(url: str, media_type: Optional[str]) -> bool:
-        url_lc = url.lower()
-        return (
-            not media_type or
-            (media_type == "image" and url_lc.endswith(("jpg", "jpeg", "png"))) or
-            (media_type == "video" and url_lc.endswith(("mp4", "webm", "gifv", "gif"))) or
-            (media_type == "video" and "streamable.com" in url_lc) or
-            (media_type == "video" and "redgifs.com" in url_lc) or
-            ("/gallery/" in url_lc and media_type == "image") or
-            ("v.redd.it" in url_lc and media_type == "video")
-        )
 
     @staticmethod
     def is_gfycat(url: str) -> bool:
