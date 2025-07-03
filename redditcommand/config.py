@@ -109,6 +109,14 @@ class MediaValidationConfig:
         "twitter.com", "x.com"
     ]
 
+    IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+    VIDEO_EXTENSIONS = (".mp4", ".webm", ".gifv", ".gif")
+
+    SOURCE_HINTS = {
+        "image": ["/gallery/"],
+        "video": ["v.redd.it", "streamable.com", "redgifs.com"]
+    }
+
 class FileStateConfig:
     FOLLOWED_USERS_PATH = "followed_users.json"
     SEEN_POSTS_PATH = "seen_user_posts.json"
