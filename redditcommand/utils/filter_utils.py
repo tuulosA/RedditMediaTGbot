@@ -1,5 +1,6 @@
 # redditcommand/utils/filter_utils.py
 
+import re
 import logging
 from typing import Optional, Set
 from asyncpraw.models import Submission
@@ -17,18 +18,24 @@ accepted_logger = setup_accepted_logger()
 class FilterUtils:
     @staticmethod
     async def attach_metadata(post: Submission) -> None:
+        # clean the flair by removing emoji-like tags (:emoji:) and trimming
+        raw_flair = post.link_flair_text or ""
+        cleaned_flair = re.sub(r":[^:\s]+:", "", raw_flair).strip()
+        cleaned_flair = cleaned_flair if cleaned_flair.lower() != "none" and cleaned_flair else None
+
         post.metadata = {
             "title": (post.title or "Unknown")[:100],
             "url": post.url,
             "id": post.id,
-            "link_flair_text": (post.link_flair_text or "None")[:50],
+            "link_flair_text": cleaned_flair,
             "file_path": None,
             "upvotes": post.score,
             "author": post.author.name if post.author else "[deleted]"
         }
+
         accepted_logger.info(
             f"[accepted] r/{getattr(post.subreddit, 'display_name', 'unknown')} | "
-            f"ID: {post.id} | Title: {post.title[:50]} | Flair: {post.link_flair_text} | "
+            f"ID: {post.id} | Title: {post.title[:50]} | Flair: {cleaned_flair or 'None'} | "
             f"Upvotes: {post.score} | Author: {post.metadata['author']} | Media URL: {post.url} | Post Link: https://reddit.com/comments/{post.id}"
         )
 

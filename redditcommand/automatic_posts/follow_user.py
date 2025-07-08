@@ -4,7 +4,7 @@ import logging
 import time
 import os
 from urllib.parse import urlparse
-import aiohttp
+import re
 
 from redditcommand.config import RedditClientManager, FollowUserConfig
 from redditcommand.utils.filter_utils import FilterUtils
@@ -115,9 +115,13 @@ class FollowedUserMonitor:
         return filters and not any(term in post_text for term in filters)
 
     def _build_caption(self, tg_user, reddit_user, post):
+        # remove emoji-style markers like :emoji_name: from flair
+        raw_flair = post.link_flair_text or ""
+        cleaned_flair = re.sub(r":[^:\s]+:", "", raw_flair).strip()
+
         caption = f"New post by u/{reddit_user}!\n{post.title}"
-        if post.link_flair_text:
-            caption += f" [{post.link_flair_text}]"
+        if cleaned_flair and cleaned_flair.lower() != "none":
+            caption += f" [{cleaned_flair}]"
         if tg_user:
             caption = f"@{tg_user}\n" + caption
         return caption

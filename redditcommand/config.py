@@ -78,7 +78,7 @@ class SchedulerConfig:
     FOLLOW_CHECK_FIRST_DELAY = 10
 
 class FollowUserConfig:
-    POST_AGE_THRESHOLD_SECONDS = 600
+    POST_AGE_THRESHOLD_SECONDS = 43200
 
 class TelegramConfig:
     LOCAL_TIMEZONE = timezone(timedelta(hours=3))
