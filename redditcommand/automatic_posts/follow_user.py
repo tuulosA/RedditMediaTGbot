@@ -12,6 +12,7 @@ from redditcommand.utils.media_utils import MediaUtils, MediaDownloader, MediaSe
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.file_state_utils import FollowedUserStore
 from redditcommand.handle_direct_link import MediaLinkResolver
+from redditcommand.utils.url_utils import is_valid_media_url
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class FollowedUserMonitor:
                     continue
                 if (now - post.created_utc) > FollowUserConfig.POST_AGE_THRESHOLD_SECONDS:
                     continue
-                if not FilterUtils.is_valid_url(post.url):
+                if not is_valid_media_url(post.url):
                     continue
 
                 await FilterUtils.attach_metadata(post)
