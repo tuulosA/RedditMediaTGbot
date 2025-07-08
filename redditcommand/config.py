@@ -194,3 +194,6 @@ class Messages:
 
     NO_POPULAR_SUBREDDITS = "Failed to fetch random subreddit."
     RANDOM_FETCH_FAILED = "Random subreddit fetch failed."
+
+    PROVIDE_DEFAULT_SUBREDDIT = "Please provide a subreddit name. Usage: /setsubreddit [subreddit]"
+    DEFAULT_SUBREDDIT_SET = "Default subreddit for top posts set to: r/{subreddit}"

@@ -162,13 +162,13 @@ class RedditCommandHandler:
     @staticmethod
     async def set_subreddit_command(update: Update, context: CallbackContext) -> None:
         if not context.args:
-            await update.message.reply_text("Please provide a subreddit name. Usage: /setsubreddit [subreddit]")
+            await update.message.reply_text(Messages.PROVIDE_DEFAULT_SUBREDDIT)
             return
 
         subreddit = context.args[0].strip().lower()
         if not subreddit.isalnum():
-            await update.message.reply_text("Invalid subreddit name.")
+            await update.message.reply_text(Messages.NO_SUBREDDITS_PROVIDED)
             return
 
         FollowedUserStore.set_global_top_subreddit(subreddit)
-        await update.message.reply_text(f"Default subreddit for top posts set to: r/{subreddit}")
+        await update.message.reply_text(Messages.DEFAULT_SUBREDDIT_SET)
