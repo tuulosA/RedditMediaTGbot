@@ -1,6 +1,5 @@
 # redditcommand/commands.py
 
-import logging
 from telegram import Update
 from telegram.ext import CallbackContext
 from asyncprawcore.exceptions import NotFound, Forbidden
@@ -11,10 +10,11 @@ from redditcommand.config import (
     LogConfig,
     RedditDefaults
 )
+from redditcommand.utils.log_manager import LogManager
 from redditcommand.utils.command_utils import CommandParser, CommandUtils
 from redditcommand.utils.file_state_utils import FollowedUserStore
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class RedditCommandHandler:

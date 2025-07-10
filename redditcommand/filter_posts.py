@@ -1,14 +1,14 @@
 # redditcommand/filter_posts.py
 
-import logging
 from random import sample
 from typing import List, Optional, Set
 from asyncpraw.models import Submission
 
+from redditcommand.utils.log_manager import LogManager
 from redditcommand.utils.filter_utils import FilterUtils
 from redditcommand.config import SkipReasons
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class MediaPostFilter:

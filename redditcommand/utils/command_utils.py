@@ -1,15 +1,14 @@
 # redditcommand/utils/command_utils.py
 
-import logging
-
 from telegram import Update
 from telegram.ext import CallbackContext
 from typing import List, Tuple, Optional
 
 from redditcommand.config import Messages, MediaConfig
 from redditcommand.utils.file_state_utils import FollowedUserStore
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class CommandParser:

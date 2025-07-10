@@ -3,7 +3,6 @@
 import os
 import aiohttp
 import asyncio
-import logging
 
 from typing import Optional
 from redgifs.aio import API as RedGifsAPI
@@ -11,12 +10,13 @@ from asyncpraw.models import Submission
 
 from redditcommand.config import RedditVideoConfig
 
+from redditcommand.utils.log_manager import LogManager
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.media_utils import MediaDownloader
 from redditcommand.utils.reddit_video_resolver import RedditVideoResolver
 from redditcommand.utils.session import GlobalSession
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class MediaLinkResolver:

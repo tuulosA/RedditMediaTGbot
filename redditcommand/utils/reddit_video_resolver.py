@@ -1,7 +1,6 @@
 # redditcommand/utils/reddit_video_resolver.py
 # this is primarily a hacky method for dealing with dead imgur links, as the media file is often still available from reddit's server
 
-import logging
 import aiohttp
 import os
 import re
@@ -11,8 +10,9 @@ from typing import Optional
 from redditcommand.config import RedditVideoConfig
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.session import GlobalSession
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class RedditVideoResolver:

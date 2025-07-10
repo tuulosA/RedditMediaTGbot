@@ -2,18 +2,18 @@
 
 import random
 import asyncio
-import logging
 from typing import List, Optional
 
 from telegram import Update
 from asyncpraw import Reddit
 
+from redditcommand.utils.log_manager import LogManager
 from redditcommand.config import RedditClientManager, MediaConfig, RetryConfig, RedditDefaults, PipelineConfig
 from redditcommand.utils.pipeline_utils import PipelineHelper
 from redditcommand.fetch import MediaPostFetcher
 from redditcommand.media_handler import MediaProcessor
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class RedditMediaPipeline:

@@ -1,6 +1,5 @@
 # redditcommand/automatic_posts/top_post.py
 
-import logging
 from typing import Optional, Tuple, Union
 
 from telegram import Update, Bot
@@ -12,8 +11,10 @@ from redditcommand.utils.media_utils import MediaUtils
 from redditcommand.automatic_posts.top_post_utils import TopPostUtils
 from redditcommand.media_handler import MediaProcessor
 from redditcommand.utils.file_state_utils import FollowedUserStore
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
+
 SubredditTarget = Union[Update, Tuple[Bot, int]]
 
 

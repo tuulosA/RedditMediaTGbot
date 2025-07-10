@@ -1,7 +1,6 @@
 # redditcommand/utils/media_utils.py
 
 import os
-import logging
 import asyncio
 import aiohttp
 
@@ -16,8 +15,9 @@ from urllib.parse import urlparse
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.config import TimeoutConfig, CommentFilterConfig
 from redditcommand.utils.session import GlobalSession
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class MediaSender:

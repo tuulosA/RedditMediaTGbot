@@ -1,6 +1,5 @@
 # redditcommand/utils/pipeline_utils.py
 
-import logging
 import asyncio
 from typing import List, Callable, Awaitable
 
@@ -9,8 +8,9 @@ from asyncpraw import Reddit
 from asyncpraw.models import Submission
 
 from redditcommand.config import Messages
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class PipelineHelper:

@@ -1,7 +1,6 @@
 # redditcommand/media_handler.py
 
 import asyncio
-import logging
 import aiohttp
 import os
 import urllib.parse
@@ -15,12 +14,13 @@ from asyncpraw.models import Submission
 from .config import MediaConfig, RetryConfig
 from .handle_direct_link import MediaLinkResolver
 
+from redditcommand.utils.log_manager import LogManager
 from redditcommand.utils.media_utils import MediaSender, MediaUtils, MediaDownloader, CaptionBuilder
 from redditcommand.utils.compressor import Compressor
 from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.session import GlobalSession
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class MediaProcessor:

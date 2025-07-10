@@ -1,18 +1,16 @@
 # redditcommand/utils/filter_utils.py
 
 import re
-import logging
 from typing import Optional, Set
 from asyncpraw.models import Submission
 
-from redditcommand.utils.logging_utils import setup_skip_logger, setup_accepted_logger
 from redditcommand.utils.url_utils import is_valid_media_url, matches_media_type
 from redditcommand.config import SkipReasons
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
-
-skip_logger = setup_skip_logger()
-accepted_logger = setup_accepted_logger()
+logger = LogManager.setup_main_logger()
+skip_logger = LogManager.get_skip_logger()
+accepted_logger = LogManager.get_accepted_logger()
 
 
 class FilterUtils:

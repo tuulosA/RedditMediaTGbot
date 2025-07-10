@@ -2,14 +2,16 @@
 
 import os
 import re
-import logging
 from shutil import copy2
 from datetime import datetime
 from telegram import Update, Bot
 from typing import Union
 from asyncpraw.models import Submission
 
-logger = logging.getLogger(__name__)
+from redditcommand.utils.log_manager import LogManager
+
+logger = LogManager.setup_main_logger()
+
 SubredditTarget = Union[Update, tuple[Bot, int]]
 
 

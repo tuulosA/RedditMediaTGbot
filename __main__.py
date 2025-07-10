@@ -2,12 +2,14 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import Application
 
-from redditcommand.utils.logger import setup_logging
+from redditcommand.utils.log_manager import LogManager
 from telegram_utils.regist import TelegramRegistrar
 
 def main():
     load_dotenv()
-    logger = setup_logging()
+
+    LogManager.setup_error_logging("logs/error.log")
+    logger = LogManager.setup_main_logger()
     logger.info("Bot is starting...")
 
     telegram_api_key = os.getenv("TELEGRAM_API_KEY")
@@ -24,6 +26,7 @@ def main():
 
     logger.info("Bot is now polling...")
     application.run_polling()
+
 
 if __name__ == "__main__":
     try:

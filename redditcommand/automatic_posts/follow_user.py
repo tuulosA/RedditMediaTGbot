@@ -1,6 +1,5 @@
 # redditcommand/automatic_posts/follow_user.py
 
-import logging
 import time
 import os
 from urllib.parse import urlparse
@@ -13,8 +12,9 @@ from redditcommand.utils.tempfile_utils import TempFileManager
 from redditcommand.utils.file_state_utils import FollowedUserStore
 from redditcommand.handle_direct_link import MediaLinkResolver
 from redditcommand.utils.url_utils import is_valid_media_url
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class FollowUserScheduler:

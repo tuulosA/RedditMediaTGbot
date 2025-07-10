@@ -2,15 +2,15 @@
 
 import asyncio
 import random
-import logging
 from typing import Optional, List, Set
 from asyncpraw.models import Submission
 
 from .config import RedditClientManager, MediaConfig, RedditDefaults
 from .filter_posts import MediaPostFilter
 from redditcommand.utils.fetch_utils import RedditPostFetcher, FetchOrchestrator
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class MediaPostFetcher:

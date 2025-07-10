@@ -17,9 +17,6 @@ from .fetch_utils import SubredditFetcher, RedditPostFetcher, RandomSearch, Fetc
 from .filter_utils import FilterUtils
 from .file_state_utils import FollowedUserStore
 
-# Logging
-from .logger import setup_logging
-
 # Pipeline helpers
 from .pipeline_utils import PipelineHelper
 

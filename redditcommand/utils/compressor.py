@@ -1,12 +1,12 @@
 # redditcommand/utils/compressor.py
 
 import os
-import logging
 import asyncio
 
 from redditcommand.utils.tempfile_utils import TempFileManager
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class Compressor:

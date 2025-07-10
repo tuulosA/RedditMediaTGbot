@@ -1,6 +1,5 @@
 # redditcommand/utils/fetch_utils.py
 
-import logging
 import asyncio
 import random
 
@@ -8,8 +7,9 @@ from typing import List, Optional, Set, Tuple
 from asyncpraw.models import Subreddit, Submission
 
 from redditcommand.config import RedditClientManager, MediaConfig, Messages
+from redditcommand.utils.log_manager import LogManager
 
-logger = logging.getLogger(__name__)
+logger = LogManager.setup_main_logger()
 
 
 class SubredditFetcher:
