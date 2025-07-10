@@ -1,15 +1,16 @@
 # redditcommand/automatic_posts/top_post_scheduler.py
 
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from redditcommand.automatic_posts.top_post import TopPostManager
+from redditcommand.config import TelegramConfig
 
 
 class TopPostScheduler:
-    TIMEZONE = timezone(timedelta(hours=3))
+    TIMEZONE = TelegramConfig.LOCAL_TIMEZONE
 
     @classmethod
     async def run_command(cls, label: str, time_filter: str, update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -171,4 +171,5 @@ class RedditCommandHandler:
             return
 
         FollowedUserStore.set_global_top_subreddit(subreddit)
-        await update.message.reply_text(Messages.DEFAULT_SUBREDDIT_SET)
+        await update.message.reply_text(Messages.DEFAULT_SUBREDDIT_SET.format(subreddit=subreddit))
+
