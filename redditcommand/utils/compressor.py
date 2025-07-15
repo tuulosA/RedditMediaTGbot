@@ -37,18 +37,29 @@ class Compressor:
 
     @staticmethod
     async def compress(input_path: str, output_path: str, target_size_mb: int = 50, max_attempts: int = 3) -> bool:
-        crf = 32
-        max_bitrate = 2000
+        crf = 28
+        max_bitrate = 2500  # for later attempts only
 
         for attempt in range(max_attempts):
             try:
-                logger.info(f"Compression attempt {attempt + 1} for {input_path} with CRF={crf}, Max Bitrate={max_bitrate}")
+                logger.info(f"Compression attempt {attempt + 1} for {input_path} with CRF={crf}"
+                            + (f", Max Bitrate={max_bitrate}kbps" if attempt > 0 else ""))
+
                 cmd = [
                     "ffmpeg", "-y", "-i", input_path,
-                    "-vcodec", "libx264", "-crf", str(crf), "-preset", "ultrafast",
-                    "-vf", "scale=1280:-2", "-acodec", "aac", "-b:a", "96k",
-                    output_path
+                    "-vcodec", "libx264", "-crf", str(crf), "-preset", "fast",
+                    "-vf", "scale='min(1280,iw)':-2",
+                    "-acodec", "aac", "-b:a", "96k",
                 ]
+
+                if attempt > 0:
+                    cmd += [
+                        "-maxrate", f"{max_bitrate}k",
+                        "-bufsize", f"{max_bitrate * 2}k"
+                    ]
+
+                cmd.append(output_path)
+
                 proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
                 _, stderr = await proc.communicate()
 
@@ -69,8 +80,9 @@ class Compressor:
             except Exception as e:
                 logger.error(f"Compression error (attempt {attempt + 1}): {e}", exc_info=True)
 
-            crf += 2
-            max_bitrate -= 500
+            # Gradual adjustments
+            crf = min(crf + 1, 32)
+            max_bitrate = max(max_bitrate - 300, 1500)
 
         logger.error(f"Failed to compress {input_path} below {target_size_mb} MB after {max_attempts} attempts.")
         return False

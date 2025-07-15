@@ -20,16 +20,16 @@ class TopPostUtils:
     def build_caption(post: Submission, label: str) -> str:
         title = post.metadata.get("title", "No title")
         author = post.metadata.get("author", "[deleted]")
-        raw_flair = post.metadata.get("link_flair_text", "")
+        raw_flair = post.metadata.get("link_flair_text")
         upvotes = post.metadata.get("upvotes", 0)
         top_comment = post.metadata.get("top_comment")
 
-        # remove emoji patterns like :something: from the flair
-        cleaned_flair = re.sub(r":[^:\s]+:", "", raw_flair).strip()
+        if isinstance(raw_flair, str):
+            cleaned_flair = re.sub(r":[^:\s]+:", "", raw_flair).strip()
+        else:
+            cleaned_flair = ""
 
-        # include flair only if non-empty and not equal to "none"
         flair_text = f" [{cleaned_flair}]" if cleaned_flair and cleaned_flair.lower() != "none" else ""
-
         caption = f"{label} ({upvotes} upvotes)\n\n{title}{flair_text} by u/{author}"
 
         if top_comment:
