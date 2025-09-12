@@ -11,3 +11,4 @@ seen_user_posts.json
 follower_map.json
 user_filters.json
 followed_subreddit.json
+htmlcov

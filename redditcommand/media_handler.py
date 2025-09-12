@@ -34,7 +34,11 @@ class MediaProcessor:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+        try:
+            if self.session and hasattr(self.session, "close") and not getattr(self.session, "closed", False):
+                await self.session.close()
+        finally:
+            self.session = None
 
     async def process_batch(self, media_list, include_comments, include_flair, include_title):
         tasks = [
