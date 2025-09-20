@@ -22,7 +22,7 @@ logger = LogManager.setup_main_logger()
 
 class MediaSender:
     @staticmethod
-    def determine_type(file_path: str):
+    def determine_type_and_send(file_path: str):
         ext = os.path.splitext(urlparse(file_path).path)[1].lower()
         if ext in (".mp4"):
             return MediaSender.send_video
@@ -91,34 +91,6 @@ class MediaSender:
             )
 
 class MediaUtils:
-    @staticmethod
-    async def convert_gifv(input_file: str, output_file: str) -> Optional[str]:
-        command = [
-            "ffmpeg", "-y", "-i", input_file,
-            "-movflags", "faststart",
-            "-pix_fmt", "yuv420p",
-            "-preset", "ultrafast",
-            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            output_file,
-        ]
-
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            _, stderr = await process.communicate()
-
-            if process.returncode == 0:
-                logger.info(f"Converted {input_file} to {output_file}")
-                TempFileManager.cleanup_file(input_file)
-                return output_file
-            logger.error(f"FFmpeg failed: {stderr.decode()}")
-        except Exception as e:
-            logger.error(f"Error during FFmpeg conversion: {e}", exc_info=True)
-        return None
-
     @staticmethod
     async def convert_gif_to_mp4(gif_path: str) -> Optional[str]:
         if not await MediaUtils.validate_file(gif_path):

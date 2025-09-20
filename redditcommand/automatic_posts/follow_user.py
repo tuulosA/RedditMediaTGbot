@@ -73,7 +73,7 @@ class FollowedUserMonitor:
                         continue
 
                     caption = self._build_caption(tg_user, reddit_user, post)
-                    await MediaSender.determine_type(file_path)(file_path, target, caption=caption)
+                    await MediaSender.determine_type_and_send(file_path)(file_path, target, caption=caption)
 
                 self.new_seen.add(post.id)
 

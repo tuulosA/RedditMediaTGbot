@@ -139,7 +139,7 @@ class MediaProcessor:
         return file_path
 
     async def upload_media(self, file_path: str, target, caption: Optional[str]) -> bool:
-        handler = MediaSender.determine_type(file_path)
+        handler = MediaSender.determine_type_and_send(file_path)
         if not handler:
             logger.warning(f"Unsupported media type: {file_path}")
             return False
