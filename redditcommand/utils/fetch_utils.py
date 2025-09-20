@@ -1,8 +1,5 @@
-# redditcommand/utils/fetch_utils.py
-
 import asyncio
 import random
-
 from typing import List, Optional, Set, Tuple
 from asyncpraw.models import Subreddit, Submission
 
@@ -10,6 +7,17 @@ from redditcommand.config import RedditClientManager, MediaConfig, Messages
 from redditcommand.utils.log_manager import LogManager
 
 logger = LogManager.setup_main_logger()
+
+
+async def _safe_reply(update, message: str) -> None:
+    target = getattr(update, "message", update)
+    if hasattr(target, "reply_text"):
+        try:
+            await target.reply_text(message)
+        except Exception as e:
+            logger.warning(f"Failed to send message to user: {e}")
+    else:
+        logger.warning("No reply_text available on Update object to notify user.")
 
 
 class SubredditFetcher:
@@ -59,7 +67,7 @@ class SubredditFetcher:
             logger.warning(message)
         else:
             logger.info(message)
-        await update.message.reply_text(message)
+        await _safe_reply(update, message)
 
 
 class RedditPostFetcher:
@@ -116,12 +124,12 @@ class RandomSearch:
                         limit=MediaConfig.POST_LIMIT
                     )
                 ]
-                return posts, subreddit if posts else ([], subreddit)
+                return (posts, subreddit) if posts else ([], subreddit)
 
             subreddits = [sub async for sub in reddit.subreddits.popular(limit=100)]
             if not subreddits:
                 logger.warning("No popular subreddits found.")
-                await update.message.reply_text(Messages.NO_POPULAR_SUBREDDITS)
+                await _safe_reply(update, Messages.NO_POPULAR_SUBREDDITS)
                 return [], None
 
             subreddit = random.choice(subreddits)
@@ -130,7 +138,7 @@ class RandomSearch:
 
         except Exception as e:
             logger.error(f"Random search failure: {e}", exc_info=True)
-            await update.message.reply_text(Messages.RANDOM_FETCH_FAILED)
+            await _safe_reply(update, Messages.RANDOM_FETCH_FAILED)
             return [], None
 
 

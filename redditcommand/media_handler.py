@@ -34,11 +34,8 @@ class MediaProcessor:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if self.session and hasattr(self.session, "close") and not getattr(self.session, "closed", False):
-                await self.session.close()
-        finally:
-            self.session = None
+        # Do not close GlobalSession here if it is shared
+        self.session = None
 
     async def _maybe_notify_compression(self, file_path: str):
         try:
@@ -107,11 +104,11 @@ class MediaProcessor:
         if not file_path:
             return None
 
-        # Notify if we’re about to compress (but skip if tiny or >100MB where we bail out)
         await self._maybe_notify_compression(file_path)
 
-        if await Compressor.validate_and_compress(file_path, MediaConfig.MAX_FILE_SIZE_MB):
-            return file_path
+        final_path = await Compressor.validate_and_compress(file_path, MediaConfig.MAX_FILE_SIZE_MB)
+        if final_path:
+            return final_path
 
         logger.warning(f"File too large after download: {file_path}")
         TempFileManager.cleanup_file(file_path)

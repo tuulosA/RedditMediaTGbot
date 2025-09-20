@@ -82,7 +82,6 @@ class RedditMediaPipeline:
                         media_count=remaining,
                         update=self.update,
                         processed_urls=self.processed_urls,
-                        include_comments=self.include_comments,
                     )
 
                     if not posts:

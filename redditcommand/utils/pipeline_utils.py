@@ -24,9 +24,25 @@ class PipelineHelper:
             raise RuntimeError(f"Failed to initialize Reddit client: {e}")
 
     @staticmethod
+    async def _safe_reply(update: Update, message: str) -> None:
+        """
+        Try update.message.reply_text first, then update.reply_text.
+        Log a warning if neither is available or sending fails.
+        """
+        target = getattr(update, "message", update)
+        if hasattr(target, "reply_text"):
+            try:
+                await target.reply_text(message)
+                return
+            except Exception as e:
+                logger.warning(f"Failed to send message to user: {e}")
+        else:
+            logger.warning("No reply_text available on Update object to notify user.")
+
+    @staticmethod
     async def notify_user(update: Update, message: str) -> None:
         logger.info(f"Notifying user: {message}")
-        await update.message.reply_text(message)
+        await PipelineHelper._safe_reply(update, message)
 
     @staticmethod
     async def validate_subreddits(update: Update, reddit_instance: Reddit, subreddit_names: List[str]) -> List[str]:
