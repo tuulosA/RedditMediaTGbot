@@ -193,13 +193,13 @@ class MediaLinkResolver:
                 process.kill()
                 await process.wait()
                 logger.error("yt-dlp timed out")
-                TempFileManager.cleanup_dir(temp_dir)
+                TempFileManager.cleanup_file(temp_dir)
                 return None
 
             if process.returncode != 0:
                 err = (stderr.decode(errors="ignore") or "").strip()
                 logger.error(f"yt-dlp failed: {err}")
-                TempFileManager.cleanup_dir(temp_dir)
+                TempFileManager.cleanup_file(temp_dir)
                 return None
 
             # Resolve the resulting file. We prefer mp4, but check a couple of common fallbacks.
@@ -223,5 +223,5 @@ class MediaLinkResolver:
         except Exception as e:
             logger.error(f"yt-dlp exception: {e}", exc_info=True)
 
-        TempFileManager.cleanup_dir(temp_dir)
+        TempFileManager.cleanup_file(temp_dir)
         return None

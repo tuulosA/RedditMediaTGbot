@@ -8,14 +8,22 @@ from redditcommand.config import LogConfig
 
 class BaseLogger:
     @staticmethod
-    def setup_stream_logger(level=logging.INFO):
+    def setup_stream_logger(level=None):
+        # allow LOG_LEVEL=DEBUG/INFO/WARNING/ERROR
+        if isinstance(level, str):
+            level = getattr(logging, level.upper(), logging.INFO)
+        if level is None:
+            level = getattr(logging, os.getenv("LOG_LEVEL", "DEBUG").upper(), logging.INFO)
+
         logger = logging.getLogger()
         logger.setLevel(level)
 
         if not logger.hasHandlers():
             handler = logging.StreamHandler()
             handler.setLevel(level)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(name)s:%(lineno)d - %(message)s'
+            )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
