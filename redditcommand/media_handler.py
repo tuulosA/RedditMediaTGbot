@@ -40,6 +40,23 @@ class MediaProcessor:
         finally:
             self.session = None
 
+    async def _maybe_notify_compression(self, file_path: str):
+        try:
+            size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        except Exception:
+            return
+
+        # Notify only when it’s larger than the Telegram target limit but <= 100MB (our compressor hard cap)
+        if size_mb > MediaConfig.MAX_FILE_SIZE_MB and size_mb <= 100:
+            msg = f"Large file ({size_mb:.1f} MB). Compressing before sending..."
+            try:
+                # Support both shapes: update.message.reply_text(...) and update.reply_text(...)
+                target = getattr(self.update, "message", self.update)
+                if hasattr(target, "reply_text"):
+                    await target.reply_text(msg)
+            except Exception as e:
+                logger.warning(f"Failed to send compression notice: {e}")
+
     async def process_batch(self, media_list, include_comments, include_flair, include_title):
         tasks = [
             self.process_single(media, include_comments, include_flair, include_title)
@@ -89,6 +106,9 @@ class MediaProcessor:
         file_path = await self.download_file(resolved_url, post_id)
         if not file_path:
             return None
+
+        # Notify if we’re about to compress (but skip if tiny or >100MB where we bail out)
+        await self._maybe_notify_compression(file_path)
 
         if await Compressor.validate_and_compress(file_path, MediaConfig.MAX_FILE_SIZE_MB):
             return file_path
