@@ -51,54 +51,73 @@ class MediaLinkResolver:
     
     async def _v_reddit(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
         """
-        Download best available DASH video + DASH_audio.mp4 when present, and mux.
-        Falls back to video-only if the post truly has no audio.
+        Download best available DASH video + DASH_audio.mp4 when present, mux to a single file,
+        and ALWAYS return a path named 'reddit_{post_id}.mp4' (no _v suffix for mute videos).
         """
         from redditcommand.utils.tempfile_utils import TempFileManager
         from redditcommand.utils.media_utils import MediaDownloader, AVMuxer
         from redditcommand.config import RedditVideoConfig
 
         base = media_url.rstrip("/")
-        # Try common DASH video renditions in descending quality
         dash_video_urls = [f"{base}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
+
         try:
-            # Prefer highest valid DASH_* video
+            # 1) Pick highest working DASH video
             video_url = await MediaDownloader.find_first_valid_url(dash_video_urls, session=self.session)
             if not video_url:
                 logger.info(f"No valid DASH video for {media_url}")
                 return None
 
-            # Probe audio; if present, we'll mux
+            # 2) Check if audio exists
             dash_audio_url = f"{base}/DASH_audio.mp4"
             audio_ok = await MediaDownloader.find_first_valid_url([dash_audio_url], session=self.session)
+
             post_id = (post.id if post else TempFileManager.extract_post_id_from_url(media_url)) or "unknown"
-
             temp_dir = TempFileManager.create_temp_dir("vreddit_")
-            video_path = os.path.join(temp_dir, f"reddit_{post_id}_v.mp4")
-            audio_path = os.path.join(temp_dir, f"reddit_{post_id}_a.m4a")  # container name doesn’t matter much
-            out_path   = os.path.join(temp_dir, f"reddit_{post_id}.mp4")
 
-            # Always download the video
-            video_path = await MediaDownloader.download_file(video_url, video_path, session=self.session)
-            if not video_path:
+            # Canonical final output name (ALWAYS this, with or without audio)
+            out_path   = os.path.join(temp_dir, f"reddit_{post_id}.mp4")
+            # Temporary staging files
+            video_tmp  = os.path.join(temp_dir, f"reddit_{post_id}__video_tmp.mp4")
+            audio_tmp  = os.path.join(temp_dir, f"reddit_{post_id}__audio_tmp.m4a")
+
+            # 3) Download video track
+            video_tmp = await MediaDownloader.download_file(video_url, video_tmp, session=self.session)
+            if not video_tmp:
                 return None
 
-            # If audio track exists, download + mux; else return video-only
+            # 4) If audio exists, download + mux -> out_path
             if audio_ok:
-                audio_path = await MediaDownloader.download_file(dash_audio_url, audio_path, session=self.session)
-                if audio_path:
-                    muxed = await AVMuxer.mux_av(video_path, audio_path, out_path)
+                a_path = await MediaDownloader.download_file(dash_audio_url, audio_tmp, session=self.session)
+                if a_path:
+                    muxed = await AVMuxer.mux_av(video_tmp, a_path, out_path)
                     if muxed:
-                        return muxed
-                    # If mux somehow fails, we can still send the video-only file
-                    logger.warning("Mux failed; falling back to video-only playback.")
-                    return video_path
+                        # Clean up tmp files; return canonical file
+                        try:
+                            TempFileManager.cleanup_file(video_tmp)
+                            TempFileManager.cleanup_file(audio_tmp)
+                        except Exception:
+                            pass
+                        return out_path
+                    else:
+                        logger.warning("Mux failed; falling back to video-only.")
                 else:
                     logger.info("Audio URL detected but failed to download; using video-only.")
-                    return video_path
-            else:
-                logger.info("No DASH_audio present; using video-only (likely a silent post).")
-                return video_path
+
+            # 5) No audio (or mux failed): move video_tmp -> out_path so the name is canonical
+            try:
+                os.replace(video_tmp, out_path)  # atomic on the same filesystem
+            except Exception as e:
+                logger.error(f"Failed to rename video to canonical name: {e}", exc_info=True)
+                return video_tmp  # last resort; caller can still send it
+
+            # Best-effort cleanup of any leftover audio tmp
+            try:
+                TempFileManager.cleanup_file(audio_tmp)
+            except Exception:
+                pass
+
+            return out_path
 
         except Exception as e:
             logger.error(f"Error resolving v.redd.it media: {e}", exc_info=True)
