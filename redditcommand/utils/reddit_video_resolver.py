@@ -211,20 +211,17 @@ class RedditVideoResolver:
     async def resolve_video(cls, post: Submission, session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
         """
         Resolve a reddit-hosted (v.redd.it) video for a Submission.
-        - Finds the base v.redd.it URL via submission fields, JSON, or HTML.
-        - Downloads the best DASH_* video variant.
-        - If DASH_audio.mp4 exists, downloads it and muxes audio+video into a single MP4.
-        - Falls back to video-only if no audio is available or mux fails.
+        Always return '<tmpdir>/reddit_<postid>.mp4' (no '_v' suffix), with audio muxed in
+        when available; otherwise return the video-only stream under the same canonical name.
         """
         try:
             session = session or await cls._get_session()
 
-            # 1) Try to get v.redd.it straight from the Submission data
+            # ---------- find base v.redd.it ----------
             base_url = cls._extract_vreddit_from_submission(post)
             if base_url:
                 logger.info(f"[Resolver] Using v.redd.it from submission fields: {base_url}")
 
-            # 2) Fall back to the public JSON API
             if not base_url:
                 data = await cls.fetch_post_json(post.id, session)
                 if data:
@@ -232,7 +229,6 @@ class RedditVideoResolver:
                     if base_url:
                         logger.info(f"[Resolver] Found v.redd.it via JSON: {base_url}")
 
-            # 3) Fall back to HTML scraping (old.reddit for simpler DOM, with over18 cookie)
             if not base_url:
                 html = await cls.fetch_post_html(
                     cls.build_mobile_url(getattr(post.subreddit, "display_name", "unknown"), post.id, post.title or ""),
@@ -246,59 +242,112 @@ class RedditVideoResolver:
                 logger.warning(f"[Resolver] No v.redd.it URL found for post {post.id}")
                 return None
 
-            # Locate best video track
+            # ---------- choose best DASH video ----------
             dash_video_url = await cls.find_dash_url(base_url, session)
             if not dash_video_url:
                 logger.warning(f"[Resolver] No DASH video variant found at {base_url}")
                 return None
 
-            # Prepare temp paths
+            # ---------- paths (canonical out name; tmp for staging) ----------
             temp_dir = TempFileManager.create_temp_dir("reddit_video_")
-            base_path = os.path.join(temp_dir, f"reddit_{post.id}")
-            video_path = base_path + "_v.mp4"
-            audio_path = base_path + "_a.m4a"   # container/extension not critical for mux
-            out_path   = base_path + ".mp4"
+            canonical_out = os.path.join(temp_dir, f"reddit_{post.id}.mp4")
+            video_tmp     = os.path.join(temp_dir, f"reddit_{post.id}__video_tmp.mp4")
+            audio_tmp     = os.path.join(temp_dir, f"reddit_{post.id}__audio_tmp.m4a")
 
-            # Download video
-            async with session.get(dash_video_url, headers=cls._default_headers()) as resp:
-                if resp.status != 200:
-                    logger.warning(f"[Resolver] DASH video download failed with status {resp.status} for {dash_video_url}")
-                    return None
-                with open(video_path, "wb") as f:
-                    f.write(await resp.read())
-            logger.info(f"[Resolver] Downloaded video track to {video_path}")
+            # small helpers
+            def _headers() -> Dict[str, str]:
+                return cls._default_headers()
 
-            # Try to download audio (if present). If it fails, we'll return video-only.
-            audio_url = f"{base_url}/DASH_audio.mp4"
-            audio_downloaded = False
-            try:
-                async with session.get(audio_url, headers=cls._default_headers()) as aresp:
-                    if aresp.status == 200:
-                        with open(audio_path, "wb") as af:
-                            af.write(await aresp.read())
-                        audio_downloaded = True
-                        logger.info(f"[Resolver] Downloaded audio track to {audio_path}")
-                    else:
-                        logger.info(f"[Resolver] No audio (status {aresp.status}) at {audio_url}")
-            except Exception as e:
-                logger.debug(f"[Resolver] Audio GET failed for {audio_url}: {e}")
-
-            if audio_downloaded:
-                # Mux audio + video using helper
+            async def _probe(url: str) -> bool:
+                # Some CDNs 403 on HEAD; try HEAD then GET.
                 try:
-                    from redditcommand.utils.media_utils import AVMuxer  # lazy import to avoid cycles at module import
-                    muxed = await AVMuxer.mux_av(video_path, audio_path, out_path)
-                    if muxed:
-                        logger.info(f"[Resolver] Muxed A/V to {out_path}")
-                        return out_path
-                    logger.warning("[Resolver] A/V mux failed; falling back to video-only file.")
-                except Exception as e:
-                    logger.error(f"[Resolver] Exception during mux: {e}", exc_info=True)
+                    async with session.head(url, headers=_headers(), timeout=5) as r:
+                        if r.status == 200:
+                            return True
+                except Exception:
+                    pass
+                try:
+                    async with session.get(url, headers=_headers(), timeout=5) as r:
+                        return r.status == 200
+                except Exception:
+                    return False
 
-            # Fallback: return video-only
-            return video_path
+            async def _download(url: str, dst: str) -> Optional[str]:
+                try:
+                    async with session.get(url, headers=_headers()) as r:
+                        if r.status != 200:
+                            logger.info(f"[Resolver] Download got {r.status} for {url}")
+                            return None
+                        with open(dst, "wb") as f:
+                            while True:
+                                chunk = await r.content.read(1024 * 1024)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                    return dst
+                except Exception as e:
+                    logger.debug(f"[Resolver] Download error for {url}: {e}")
+                    return None
+
+            # ---------- download video ----------
+            v_path = await _download(dash_video_url, video_tmp)
+            if not v_path:
+                return None
+            logger.info(f"[Resolver] Downloaded video track to {v_path}")
+
+            # ---------- try audio, then mux ----------
+            audio_candidates = [
+                f"{base_url}/DASH_audio.mp4",
+                f"{base_url}/DASH_audio.mp4?source=fallback",
+            ]
+            audio_url = None
+            for cand in audio_candidates:
+                if await _probe(cand):
+                    audio_url = cand
+                    break
+
+            if audio_url:
+                a_path = await _download(audio_url, audio_tmp)
+                if a_path:
+                    try:
+                        from redditcommand.utils.media_utils import AVMuxer
+                        muxed = await AVMuxer.mux_av(v_path, a_path, canonical_out)
+                    except Exception as e:
+                        logger.warning(f"[Resolver] Mux exception: {e}")
+                        muxed = None
+
+                    if muxed:
+                        # clean up temps
+                        try:
+                            TempFileManager.cleanup_file(video_tmp)
+                            TempFileManager.cleanup_file(audio_tmp)
+                        except Exception:
+                            pass
+                        logger.info(f"[Resolver] Successfully muxed to {canonical_out}")
+                        return canonical_out
+                    else:
+                        logger.warning("[Resolver] Mux failed; will return video-only under canonical name.")
+                else:
+                    logger.info(f"[Resolver] Audio detected but failed to download: {audio_url}")
+            else:
+                logger.info(f"[Resolver] No audio available at {base_url}/DASH_audio.mp4")
+
+            # ---------- no audio (or mux failed): rename tmp video -> canonical ----------
+            try:
+                if v_path != canonical_out:
+                    os.replace(v_path, canonical_out)  # atomic on same FS
+            except Exception as e:
+                logger.error(f"[Resolver] Failed to rename video to canonical name: {e}", exc_info=True)
+                return v_path  # last resort
+
+            try:
+                TempFileManager.cleanup_file(audio_tmp)
+            except Exception:
+                pass
+
+            logger.info(f"[Resolver] Returning video-only (canonical): {canonical_out}")
+            return canonical_out
 
         except Exception as e:
             logger.error(f"[Resolver] Error during video resolution for post {post.id}: {e}", exc_info=True)
-
-        return None
+            return None
