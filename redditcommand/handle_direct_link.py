@@ -51,8 +51,12 @@ class MediaLinkResolver:
     
     async def _v_reddit(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
         """
-        Download best available DASH video + DASH_audio.mp4 when present, mux to a single file,
-        and ALWAYS return a path named 'reddit_{post_id}.mp4' (no _v suffix for mute videos).
+        Download best available DASH video + audio when present, mux to a single file,
+        and ALWAYS return 'reddit_{post_id}.mp4' (no _v suffix for mute videos).
+        Tries:
+          1) Direct DASH video
+          2) DASH_audio.mp4 (with headers) and DASH_audio.mp4?source=fallback
+          3) Fallback to yt-dlp on the v.redd.it URL to merge bestvideo+bestaudio
         """
         from redditcommand.utils.tempfile_utils import TempFileManager
         from redditcommand.utils.media_utils import MediaDownloader, AVMuxer
@@ -60,39 +64,79 @@ class MediaLinkResolver:
 
         base = media_url.rstrip("/")
         dash_video_urls = [f"{base}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
+        dash_audio_urls = [f"{base}/DASH_audio.mp4", f"{base}/DASH_audio.mp4?source=fallback"]
 
+        def _headers():
+            # Same idea as your resolver: avoid 403/NSFW interstitials
+            return {
+                "User-Agent": "Mozilla/5.0 (resolver; +https://github.com/yourbot)",
+                "Cookie": "over18=1",
+                "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
+            }
+
+        async def _probe_audio_with_headers(url: str) -> bool:
+            # Try HEAD first, then tiny GET if origin dislikes HEAD
+            try:
+                async with self.session.head(url, headers=_headers(), timeout=5) as resp:
+                    if resp.status == 200:
+                        return True
+            except Exception:
+                pass
+            try:
+                async with self.session.get(url, headers=_headers(), timeout=5) as resp:
+                    return resp.status == 200
+            except Exception:
+                return False
+
+        async def _download_audio_with_headers(url: str, out_path: str) -> Optional[str]:
+            try:
+                async with self.session.get(url, headers=_headers()) as resp:
+                    if resp.status != 200:
+                        return None
+                    with open(out_path, "wb") as f:
+                        while True:
+                            chunk = await resp.content.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                return out_path
+            except Exception:
+                return None
+
+        # --- main flow ---
         try:
-            # 1) Pick highest working DASH video
+            # 1) Choose highest working DASH video
             video_url = await MediaDownloader.find_first_valid_url(dash_video_urls, session=self.session)
             if not video_url:
                 logger.info(f"No valid DASH video for {media_url}")
                 return None
 
-            # 2) Check if audio exists
-            dash_audio_url = f"{base}/DASH_audio.mp4"
-            audio_ok = await MediaDownloader.find_first_valid_url([dash_audio_url], session=self.session)
-
             post_id = (post.id if post else TempFileManager.extract_post_id_from_url(media_url)) or "unknown"
             temp_dir = TempFileManager.create_temp_dir("vreddit_")
 
-            # Canonical final output name (ALWAYS this, with or without audio)
-            out_path   = os.path.join(temp_dir, f"reddit_{post_id}.mp4")
-            # Temporary staging files
+            out_path   = os.path.join(temp_dir, f"reddit_{post_id}.mp4")    # canonical return name
             video_tmp  = os.path.join(temp_dir, f"reddit_{post_id}__video_tmp.mp4")
             audio_tmp  = os.path.join(temp_dir, f"reddit_{post_id}__audio_tmp.m4a")
 
-            # 3) Download video track
+            # 2) Download video
             video_tmp = await MediaDownloader.download_file(video_url, video_tmp, session=self.session)
             if not video_tmp:
                 return None
 
-            # 4) If audio exists, download + mux -> out_path
-            if audio_ok:
-                a_path = await MediaDownloader.download_file(dash_audio_url, audio_tmp, session=self.session)
+            # 3) Try to detect + fetch audio directly (with headers; try both URLs)
+            audio_ok = False
+            audio_url_found = None
+            for au in dash_audio_urls:
+                if await _probe_audio_with_headers(au):
+                    audio_url_found = au
+                    audio_ok = True
+                    break
+
+            if audio_ok and audio_url_found:
+                a_path = await _download_audio_with_headers(audio_url_found, audio_tmp)
                 if a_path:
                     muxed = await AVMuxer.mux_av(video_tmp, a_path, out_path)
                     if muxed:
-                        # Clean up tmp files; return canonical file
                         try:
                             TempFileManager.cleanup_file(video_tmp)
                             TempFileManager.cleanup_file(audio_tmp)
@@ -100,23 +144,44 @@ class MediaLinkResolver:
                             pass
                         return out_path
                     else:
-                        logger.warning("Mux failed; falling back to video-only.")
-                else:
-                    logger.info("Audio URL detected but failed to download; using video-only.")
+                        logger.warning("vreddit mux failed after audio download; will try yt-dlp fallback.")
 
-            # 5) No audio (or mux failed): move video_tmp -> out_path so the name is canonical
+            # 4) Fallback: let yt-dlp merge bestvideo+bestaudio from the v.redd.it page
+            #    This often succeeds when direct DASH_audio probing fails.
             try:
-                os.replace(video_tmp, out_path)  # atomic on the same filesystem
+                ytdlp_path = await self._download_with_ytdlp(media_url, post_id)
+                if ytdlp_path and os.path.exists(ytdlp_path):
+                    # Ensure canonical name
+                    if ytdlp_path != out_path:
+                        try:
+                            os.replace(ytdlp_path, out_path)
+                        except Exception:
+                            out_path = ytdlp_path
+                    # cleanup any tmp video/audio
+                    try:
+                        TempFileManager.cleanup_file(video_tmp)
+                        TempFileManager.cleanup_file(audio_tmp)
+                    except Exception:
+                        pass
+                    return out_path
             except Exception as e:
-                logger.error(f"Failed to rename video to canonical name: {e}", exc_info=True)
-                return video_tmp  # last resort; caller can still send it
+                logger.debug(f"yt-dlp fallback failed for vreddit: {e}")
 
-            # Best-effort cleanup of any leftover audio tmp
+            # 5) Final fallback: return video-only but with canonical name
+            try:
+                if video_tmp != out_path:
+                    os.replace(video_tmp, out_path)
+            except Exception as e:
+                logger.error(f"Failed to rename video-only to canonical name: {e}", exc_info=True)
+                return video_tmp  # last resort if rename fails
+
+            # best-effort cleanup
             try:
                 TempFileManager.cleanup_file(audio_tmp)
             except Exception:
                 pass
 
+            logger.info("No DASH audio or mux possible; returning video-only.")
             return out_path
 
         except Exception as e:
