@@ -54,7 +54,7 @@ class TimeoutConfig:
     DOWNLOAD_TIMEOUT = 300
 
 class RetryConfig:
-    RETRY_ATTEMPTS = 4
+    RETRY_ATTEMPTS = 1
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50

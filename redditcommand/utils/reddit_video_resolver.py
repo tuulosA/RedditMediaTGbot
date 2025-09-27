@@ -209,6 +209,13 @@ class RedditVideoResolver:
 
     @classmethod
     async def resolve_video(cls, post: Submission, session: Optional[aiohttp.ClientSession] = None) -> Optional[str]:
+        """
+        Resolve a reddit-hosted (v.redd.it) video for a Submission.
+        - Finds the base v.redd.it URL via submission fields, JSON, or HTML.
+        - Downloads the best DASH_* video variant.
+        - If DASH_audio.mp4 exists, downloads it and muxes audio+video into a single MP4.
+        - Falls back to video-only if no audio is available or mux fails.
+        """
         try:
             session = session or await cls._get_session()
 
@@ -239,22 +246,57 @@ class RedditVideoResolver:
                 logger.warning(f"[Resolver] No v.redd.it URL found for post {post.id}")
                 return None
 
-            dash_url = await cls.find_dash_url(base_url, session)
-            if not dash_url:
-                logger.warning(f"[Resolver] No DASH variant found at {base_url}")
+            # Locate best video track
+            dash_video_url = await cls.find_dash_url(base_url, session)
+            if not dash_video_url:
+                logger.warning(f"[Resolver] No DASH video variant found at {base_url}")
                 return None
 
+            # Prepare temp paths
             temp_dir = TempFileManager.create_temp_dir("reddit_video_")
-            file_path = os.path.join(temp_dir, f"reddit_{post.id}.mp4")
+            base_path = os.path.join(temp_dir, f"reddit_{post.id}")
+            video_path = base_path + "_v.mp4"
+            audio_path = base_path + "_a.m4a"   # container/extension not critical for mux
+            out_path   = base_path + ".mp4"
 
-            async with session.get(dash_url, headers=cls._default_headers()) as resp:
-                if resp.status == 200:
-                    with open(file_path, "wb") as f:
-                        f.write(await resp.read())
-                    logger.info(f"[Resolver] Successfully downloaded video to {file_path}")
-                    return file_path
-                else:
-                    logger.warning(f"[Resolver] DASH file download failed with status {resp.status} for {dash_url}")
+            # Download video
+            async with session.get(dash_video_url, headers=cls._default_headers()) as resp:
+                if resp.status != 200:
+                    logger.warning(f"[Resolver] DASH video download failed with status {resp.status} for {dash_video_url}")
+                    return None
+                with open(video_path, "wb") as f:
+                    f.write(await resp.read())
+            logger.info(f"[Resolver] Downloaded video track to {video_path}")
+
+            # Try to download audio (if present). If it fails, we'll return video-only.
+            audio_url = f"{base_url}/DASH_audio.mp4"
+            audio_downloaded = False
+            try:
+                async with session.get(audio_url, headers=cls._default_headers()) as aresp:
+                    if aresp.status == 200:
+                        with open(audio_path, "wb") as af:
+                            af.write(await aresp.read())
+                        audio_downloaded = True
+                        logger.info(f"[Resolver] Downloaded audio track to {audio_path}")
+                    else:
+                        logger.info(f"[Resolver] No audio (status {aresp.status}) at {audio_url}")
+            except Exception as e:
+                logger.debug(f"[Resolver] Audio GET failed for {audio_url}: {e}")
+
+            if audio_downloaded:
+                # Mux audio + video using helper
+                try:
+                    from redditcommand.utils.media_utils import AVMuxer  # lazy import to avoid cycles at module import
+                    muxed = await AVMuxer.mux_av(video_path, audio_path, out_path)
+                    if muxed:
+                        logger.info(f"[Resolver] Muxed A/V to {out_path}")
+                        return out_path
+                    logger.warning("[Resolver] A/V mux failed; falling back to video-only file.")
+                except Exception as e:
+                    logger.error(f"[Resolver] Exception during mux: {e}", exc_info=True)
+
+            # Fallback: return video-only
+            return video_path
 
         except Exception as e:
             logger.error(f"[Resolver] Error during video resolution for post {post.id}: {e}", exc_info=True)

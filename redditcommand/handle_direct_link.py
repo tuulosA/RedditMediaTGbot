@@ -50,27 +50,80 @@ class MediaLinkResolver:
         return None
     
     async def _v_reddit(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
-        # Try common DASH renditions in order, using the shared session
-        dash_urls = [f"{media_url.rstrip('/')}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
+        """
+        Download best available DASH video + DASH_audio.mp4 when present, and mux.
+        Falls back to video-only if the post truly has no audio.
+        """
+        from redditcommand.utils.tempfile_utils import TempFileManager
+        from redditcommand.utils.media_utils import MediaDownloader, AVMuxer
+        from redditcommand.config import RedditVideoConfig
 
-        valid_url = await MediaDownloader.find_first_valid_url(dash_urls, session=self.session)
-        if not valid_url:
-            logger.info(f"No valid DASH URL for {media_url}")
-            return None
+        base = media_url.rstrip("/")
+        # Try common DASH video renditions in descending quality
+        dash_video_urls = [f"{base}/DASH_{res}.mp4" for res in RedditVideoConfig.DASH_RESOLUTIONS]
+        try:
+            # Prefer highest valid DASH_* video
+            video_url = await MediaDownloader.find_first_valid_url(dash_video_urls, session=self.session)
+            if not video_url:
+                logger.info(f"No valid DASH video for {media_url}")
+                return None
 
-        post_id = (post.id if post else TempFileManager.extract_post_id_from_url(media_url)) or "unknown"
-        temp_dir = TempFileManager.create_temp_dir("reddit_video_")
-        file_path = os.path.join(temp_dir, f"reddit_{post_id}.mp4")
+            # Probe audio; if present, we'll mux
+            dash_audio_url = f"{base}/DASH_audio.mp4"
+            audio_ok = await MediaDownloader.find_first_valid_url([dash_audio_url], session=self.session)
+            post_id = (post.id if post else TempFileManager.extract_post_id_from_url(media_url)) or "unknown"
 
-        return await MediaDownloader.download_file(valid_url, file_path, session=self.session)
+            temp_dir = TempFileManager.create_temp_dir("vreddit_")
+            video_path = os.path.join(temp_dir, f"reddit_{post_id}_v.mp4")
+            audio_path = os.path.join(temp_dir, f"reddit_{post_id}_a.m4a")  # container name doesn’t matter much
+            out_path   = os.path.join(temp_dir, f"reddit_{post_id}.mp4")
+
+            # Always download the video
+            video_path = await MediaDownloader.download_file(video_url, video_path, session=self.session)
+            if not video_path:
+                return None
+
+            # If audio track exists, download + mux; else return video-only
+            if audio_ok:
+                audio_path = await MediaDownloader.download_file(dash_audio_url, audio_path, session=self.session)
+                if audio_path:
+                    muxed = await AVMuxer.mux_av(video_path, audio_path, out_path)
+                    if muxed:
+                        return muxed
+                    # If mux somehow fails, we can still send the video-only file
+                    logger.warning("Mux failed; falling back to video-only playback.")
+                    return video_path
+                else:
+                    logger.info("Audio URL detected but failed to download; using video-only.")
+                    return video_path
+            else:
+                logger.info("No DASH_audio present; using video-only (likely a silent post).")
+                return video_path
+
+        except Exception as e:
+            logger.error(f"Error resolving v.redd.it media: {e}", exc_info=True)
+        return None
 
     async def _imgur(self, media_url: str, post: Optional[Submission]) -> Optional[str]:
+        """
+        Prefer yt-dlp for Imgur so that, when the source has audio, we fetch
+        a progressive muxed file. If yt-dlp fails and the Reddit post actually
+        has a reddit-hosted mirror, fall back to the resolver.
+        """
         try:
+            # 1) Try yt-dlp (preserves audio when present)
+            post_id = post.id if post else TempFileManager.extract_post_id_from_url(media_url) or "unknown"
+            ytdlp_file = await self._download_with_ytdlp(media_url, post_id)
+            if ytdlp_file:
+                return ytdlp_file
+
+            # 2) Fallback: if this Reddit post has reddit_video behind the scenes, try that.
             if post:
                 fallback = await RedditVideoResolver.resolve_video(post)
                 if fallback:
                     return fallback
-            logger.warning(f"RedditVideoResolver failed and yt-dlp is disabled for {media_url}")
+
+            logger.warning(f"Imgur: yt-dlp and resolver fallback both failed for {media_url}")
         except Exception as e:
             logger.error(f"Error processing Imgur: {e}", exc_info=True)
         return None

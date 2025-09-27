@@ -224,3 +224,64 @@ class CaptionBuilder:
             caption = caption[:max_length - 3] + "…"
 
         return caption or None
+    
+# --- ADD: simple A/V mux helper (no re-encode if possible) ---
+class AVMuxer:
+    @staticmethod
+    async def mux_av(video_path: str, audio_path: str, out_path: str) -> Optional[str]:
+        """
+        Try to container-mux video+audio without re-encoding. If that fails,
+        retry with a light re-encode to guarantee success.
+        Returns out_path on success, else None.
+        """
+        import asyncio, os
+        from redditcommand.utils.tempfile_utils import TempFileManager
+        from redditcommand.utils.log_manager import LogManager
+        logger = LogManager.setup_main_logger()
+
+        # 1) Copy (fast)
+        copy_cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path, "-i", audio_path,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "copy", "-c:a", "copy",
+            "-movflags", "+faststart",
+            out_path
+        ]
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *copy_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            _, err = await proc.communicate()
+            if proc.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+                return out_path
+            logger.warning(f"A/V copy mux failed, retrying with re-encode. ffmpeg: {err.decode(errors='ignore')[:300]}")
+        except Exception as e:
+            logger.warning(f"A/V copy mux exception, retrying with re-encode: {e}")
+
+        # 2) Light re-encode fallback (keeps size modest)
+        reenc_cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path, "-i", audio_path,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-vcodec", "libx264", "-crf", "23", "-preset", "fast",
+            "-acodec", "aac", "-b:a", "128k",
+            "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart",
+            out_path
+        ]
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *reenc_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            _, err = await proc.communicate()
+            if proc.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+                return out_path
+            logger.error(f"A/V re-encode mux failed. ffmpeg: {err.decode(errors='ignore')[:300]}")
+        except Exception as e:
+            logger.error(f"A/V re-encode mux exception: {e}", exc_info=True)
+
+        # Ensure we don’t leave a broken file behind
+        TempFileManager.cleanup_file(out_path)
+        return None
+
