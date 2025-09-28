@@ -58,8 +58,8 @@ class RetryConfig:
 
 class MediaConfig:
     MAX_FILE_SIZE_MB = 50
-    DEFAULT_SEMAPHORE_LIMIT = 5
-    MAX_MEDIA_COUNT = 5
+    DEFAULT_SEMAPHORE_LIMIT = 10
+    MAX_MEDIA_COUNT = 10
     POST_LIMIT = 100
 
 class PipelineConfig:
